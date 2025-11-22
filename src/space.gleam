@@ -1,3 +1,4 @@
+import vec/vec3.{ type Vec3}
 
 /// A celestial object
 pub type Object {
@@ -5,9 +6,7 @@ pub type Object {
     name: String,
     short_name: String,
     // Cartesian xyz coordinates in light years from earth
-    x: Float,
-    y: Float,
-    z: Float,
+    position: Vec3(Float),
     // Distance from earth in light years
     earth_distance: Float,
   )

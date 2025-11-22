@@ -10,13 +10,16 @@ const targetModuleFile = process.argv[2] || "space_data.gleam";
 const toSpaceObject = (entity) => `Object(
   name: "${entity.full_name}",
   short_name: "${entity.name}",
-  x: ${entity.x},
-  y: ${entity.y},
-  z: ${entity.z},
+  position: Vec3(
+    x: ${entity.x},
+    y: ${entity.y},
+    z: ${entity.z},
+  ),
   earth_distance: ${entity.distance_ly},
   )`
 
 let content = `//// Generated space data
+import vec/vec3.{ Vec3}
 import space.{Object}
 
 `
@@ -41,9 +44,11 @@ const solDefinition = `/// The Sun
 pub const sol = Object(
   name: "Sol",
   short_name: "Sol",
-  x: 0.0,
-  y: 0.0,
-  z: 0.0,
+  position: Vec3(
+    x: 0.0,
+    y: 0.0,
+    z: 0.0,
+  ),
   // Haha can you imagine though??
   earth_distance: 0.0,
 )

@@ -1,9 +1,9 @@
 //// Game Loop
 
-const seconds_in_a_year = 31_556_926
-
 // IMPORTS ---------------------------------------------------------------------
 
+import util
+import gleam/float
 import gleam/int
 import lustre
 import lustre/attribute
@@ -12,6 +12,18 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
 import space_data.{lucy, sol, stars}
+import vec/vec3.{type Vec3}
+
+// CONSTANTS -------------------------------------------------------------------
+
+const seconds_in_an_hour = 3600
+
+const hours_in_a_year = 8760
+
+fn get_starting_speed() -> Float {
+  // 25% the speed of light
+  { 1.0 /. int.to_float(hours_in_a_year) } *. 0.25
+}
 
 // MAIN ------------------------------------------------------------------------
 
@@ -24,14 +36,16 @@ pub fn main() {
 
 // MODEL -----------------------------------------------------------------------
 
-type Model{
+type Model {
   Model(
     /// Day of progression, starting at 1
     day: Int,
     /// Hour of the day, 0-23
     hour: Int,
-    /// Speed of the craft, relative to the speed of light
-    speed: Float
+    /// Speed of the craft, in lightyears per tick (game hour)
+    speed: Float,
+    /// Current 3D position in space
+    position: Vec3(Float),
   )
 }
 
@@ -41,14 +55,11 @@ fn set_state(model: Model) -> #(Model, effect.Effect(a)) {
 }
 
 fn init(_) -> #(Model, effect.Effect(a)) {
-  set_state(Model(
-    day: 1,
-    hour: 0,
-    // Traveling at 25% the speed of light to start
-    speed: 0.25
-  ))
+  set_state(Model(day: 1, hour: 0, speed: get_starting_speed(), position: sol.position))
 }
 
+/// Traveling at 25% the speed of light to start
+/// Starting in our solar system
 // UPDATE ----------------------------------------------------------------------
 
 type Msg {
@@ -63,13 +74,13 @@ fn simulate(model: Model, hours: Int) -> Model {
     let remaining_hours = total_hours % 24
     #(model.day + additional_days, remaining_hours)
   }
-  // TODO: Movement
-  Model(
-    day: new_day,
-    hour: new_hour,
-    speed: model.speed
-  )
-} 
+ 
+  Model(day: new_day, hour: new_hour, speed: model.speed, position: util.move_towards(
+    model.position,
+    lucy.position,
+    model.speed,
+  ))
+}
 
 fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(a)) {
   case msg {
@@ -84,8 +95,12 @@ fn view(model: Model) -> Element(Msg) {
     // Labelled view functions give a similar experience to props in other
     // frameworks, while still just being functions!
     view_button(on_click: UserClickedTickButton, label: "Tick"),
-    view_count("Day", model.day),
-    view_count("Hour", model.hour),
+    view_int("Day", model.day),
+    view_int("Hour", model.hour),
+    view_float("Speed (ly/hour)", model.speed),
+    view_float("Position X (ly)", model.position.x),
+    view_float("Position Y (ly)", model.position.y),
+    view_float("Position Z (ly)", model.position.z),
   ])
 }
 
@@ -97,12 +112,7 @@ fn view_button(on_click handle_click: msg, label text: String) -> Element(msg) {
   html.button([event.on_click(handle_click)], [html.text(text)])
 }
 
-/// It's common practice for view functions that never produce events to return
-/// `Element(msg)` instead of `Element(Nil)`. This allows you to use these view
-/// functions in other contexts, while also communicating that these cannot
-/// possibly produce events: there's no way to create a `msg` from nothing!
-///
-fn view_count(label: String,count: Int) -> Element(msg) {
+fn view_int(label: String, count: Int) -> Element(msg) {
   html.p(
     [
       attribute.class(case count > 10 {
@@ -110,6 +120,13 @@ fn view_count(label: String,count: Int) -> Element(msg) {
         False -> ""
       }),
     ],
-    [html.text(label<>": "), html.text(int.to_string(count))],
+    [html.text(label <> ": "), html.text(int.to_string(count))],
+  )
+}
+
+fn view_float(label: String, value: Float) -> Element(msg) {
+  html.p(
+    [],
+    [html.text(label <> ": "), html.text(float.to_string(value))],
   )
 }
