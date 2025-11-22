@@ -1,0 +1,25 @@
+[
+  {
+    "name":"WG  22",
+    "ra":189.707421342,
+    "dec":-49.8000609765,
+    "coo_err_maj":0.0092000002,
+    "coo_err_min":0.0109000001,
+    "coo_err_angle":90,
+    "coo_wavelength":"O",
+    "coo_bibcode":"2020yCat.1350....0G",
+    "visual_magnitude":13.9600000381,
+    "plx_err_prec":4,
+    "plx_qual":"A",
+    "plx_err":0.0186000001,
+    "plx_bibcode":"2020yCat.1350....0G",
+    "plx_prec":4,
+    "plx_value":67.4058,
+    "sp_type":"DA4.2",
+    "matched_id":"BPM 37093",
+    "distance_ly":48.3869340621,
+    "x":-30.7844927208,
+    "y":-5.2661937212,
+    "z":-36.9577813124
+  }
+]

@@ -164,30 +164,31 @@ Proof of concept of 3D star visualization using orthographic projection on HTML5
       }
     }
 
-    // Draw orbital circles
+    // Draw orbital circles as ellipses (efficient for orthographic projection)
     function drawOrbits() {
       ctx.strokeStyle = 'rgba(0, 150, 200, 0.4)';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 2;
 
       const orbits = [100, 200, 300];
 
       orbits.forEach(radius => {
+        // For a circle in the XZ plane viewed orthographically:
+        // - Y-rotation just spins the circle but doesn't change its appearance
+        // - X-rotation (pitch) squashes it vertically
+        // - The ellipse always has horizontal radius = radius, vertical radius = radius * sin(angleX)
+        
+        const center = project({ x: 0, y: 0, z: 0 });
+        
+        // The horizontal extent is always the full radius (affected by zoom/scale)
+        const scale = zoom / 400;
+        const radiusX = radius * scale;
+        
+        // The vertical extent is squashed by sin(angleX)
+        const radiusY = radius * scale * Math.sin(angleX);
+        
+        // No rotation needed - the ellipse is always axis-aligned
         ctx.beginPath();
-        let first = true;
-
-        for (let angle = 0; angle <= Math.PI * 2; angle += 0.1) {
-          const x = radius * Math.cos(angle);
-          const z = radius * Math.sin(angle);
-          const p = project({ x, y: 0, z });
-
-          if (first) {
-            ctx.moveTo(p.x, p.y);
-            first = false;
-          } else {
-            ctx.lineTo(p.x, p.y);
-          }
-        }
-
+        ctx.ellipse(center.x, center.y, radiusX, Math.abs(radiusY), 0, 0, Math.PI * 2);
         ctx.stroke();
       });
     }
@@ -261,7 +262,7 @@ Proof of concept of 3D star visualization using orthographic projection on HTML5
       // Draw background elements
       drawGrid();
       drawOrbits();
-      // drawAxes();
+      drawAxes();
 
       // Sort stars by depth (z-coordinate) for proper rendering
       const projectedStars = stars.map(star => ({

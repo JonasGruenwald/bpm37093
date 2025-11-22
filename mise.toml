@@ -2,3 +2,6 @@
 erlang = "28.1.1"
 gleam = "1.13.0"
 rebar = "latest"
+
+[tasks.dev]
+run = "gleam run -m lustre/dev start"
