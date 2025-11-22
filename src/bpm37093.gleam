@@ -11,6 +11,7 @@ import lustre/effect
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
+import space_data.{lucy, sol, stars}
 
 // MAIN ------------------------------------------------------------------------
 

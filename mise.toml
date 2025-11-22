@@ -1,7 +1,17 @@
 [tools]
+bun = "1.3.3"
 erlang = "28.1.1"
 gleam = "1.13.0"
 rebar = "latest"
 
+[tasks."gen_space_data"]
+run = [
+  "bun ./data/gen_space_data.mjs src/space_data.gleam",
+  "gleam format src/space_data.gleam",
+]
+
 [tasks.dev]
 run = "gleam run -m lustre/dev start"
+
+[tasks.test]
+run = "gleam test"
