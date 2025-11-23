@@ -1,45 +1,45 @@
 @font-face {
-  font-family: 'G2 Erika';
-  src: url('fonts/G2Erika-Thin.woff2') format('woff2'),
-       url('fonts/G2Erika-Thin.woff') format('woff');
+  font-family: "G2 Erika";
+  src: url("fonts/G2Erika-Thin.woff2") format("woff2"),
+    url("fonts/G2Erika-Thin.woff") format("woff");
   font-weight: 100;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'G2 Erika';
-  src: url('fonts/G2Erika-Light.woff2') format('woff2'),
-       url('fonts/G2Erika-Light.woff') format('woff');
+  font-family: "G2 Erika";
+  src: url("fonts/G2Erika-Light.woff2") format("woff2"),
+    url("fonts/G2Erika-Light.woff") format("woff");
   font-weight: 300;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'G2 Erika';
-  src: url('fonts/G2-Erika-Regular.woff2') format('woff2'),
-       url('fonts/G2-Erika-Regular.woff') format('woff');
+  font-family: "G2 Erika";
+  src: url("fonts/G2-Erika-Regular.woff2") format("woff2"),
+    url("fonts/G2-Erika-Regular.woff") format("woff");
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'G2 Erika';
-  src: url('fonts/G2Erika-Medium.woff2') format('woff2'),
-       url('fonts/G2Erika-Medium.woff') format('woff');
+  font-family: "G2 Erika";
+  src: url("fonts/G2Erika-Medium.woff2") format("woff2"),
+    url("fonts/G2Erika-Medium.woff") format("woff");
   font-weight: 500;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'G2 Erika';
-  src: url('fonts/G2Erika-Bold.woff2') format('woff2'),
-       url('fonts/G2Erika-Bold.woff') format('woff');
+  font-family: "G2 Erika";
+  src: url("fonts/G2Erika-Bold.woff2") format("woff2"),
+    url("fonts/G2Erika-Bold.woff") format("woff");
   font-weight: 700;
   font-style: normal;
 }
 
-:root{
-  --font: 'G2 Erika', sans-serif;
+:root {
+  --font: "G2 Erika", sans-serif;
   --default-font-weight: 400;
   --default-font-size: 18px;
 }
@@ -48,4 +48,16 @@
   font-family: var(--font);
   font-weight: var(--default-font-weight);
   font-size: var(--default-font-size);
+}
+
+.space-diorama-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  border: none;
+  margin: 0;
+  padding: 0;
+  z-index: -1;
 }

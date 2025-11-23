@@ -2,7 +2,6 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import util
 import gleam/float
 import gleam/int
 import lustre
@@ -12,6 +11,9 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
 import space_data.{lucy, sol, stars}
+
+import space_diorama
+import util
 import vec/vec3.{type Vec3}
 
 // CONSTANTS -------------------------------------------------------------------
@@ -28,6 +30,7 @@ fn get_starting_speed() -> Float {
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
+  let assert Ok(_) = space_diorama.create()
   let app = lustre.application(init, update, view)
   let assert Ok(_) = lustre.start(app, "#app", Nil)
 
@@ -55,7 +58,12 @@ fn set_state(model: Model) -> #(Model, effect.Effect(a)) {
 }
 
 fn init(_) -> #(Model, effect.Effect(a)) {
-  set_state(Model(day: 1, hour: 0, speed: get_starting_speed(), position: sol.position))
+  set_state(Model(
+    day: 1,
+    hour: 0,
+    speed: get_starting_speed(),
+    position: sol.position,
+  ))
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -72,12 +80,17 @@ fn simulate(model: Model, hours: Int) -> Model {
     let remaining_hours = total_hours % 24
     #(model.day + additional_days, remaining_hours)
   }
- 
-  Model(day: new_day, hour: new_hour, speed: model.speed, position: util.move_towards(
-    model.position,
-    lucy.position,
-    model.speed *. int.to_float(hours),
-  ))
+
+  Model(
+    day: new_day,
+    hour: new_hour,
+    speed: model.speed,
+    position: util.move_towards(
+      model.position,
+      lucy.position,
+      model.speed *. int.to_float(hours),
+    ),
+  )
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(a)) {
@@ -99,6 +112,14 @@ fn view(model: Model) -> Element(Msg) {
     view_float("Position X (ly)", model.position.x),
     view_float("Position Y (ly)", model.position.y),
     view_float("Position Z (ly)", model.position.z),
+    html.div(
+      [
+       attribute.class("space-diorama-container")
+      ],
+      [
+        space_diorama.element()
+      ],
+    ),
   ])
 }
 
@@ -123,8 +144,5 @@ fn view_int(label: String, count: Int) -> Element(msg) {
 }
 
 fn view_float(label: String, value: Float) -> Element(msg) {
-  html.p(
-    [],
-    [html.text(label <> ": "), html.text(float.to_string(value))],
-  )
+  html.p([], [html.text(label <> ": "), html.text(float.to_string(value))])
 }
