@@ -21,7 +21,7 @@ const seconds_in_an_hour = 3600
 const hours_in_a_year = 8760
 
 fn get_starting_speed() -> Float {
-  // 25% the speed of light
+  // 25% the speed of light (in lightyears per hour)
   { 1.0 /. int.to_float(hours_in_a_year) } *. 0.25
 }
 
@@ -58,8 +58,6 @@ fn init(_) -> #(Model, effect.Effect(a)) {
   set_state(Model(day: 1, hour: 0, speed: get_starting_speed(), position: sol.position))
 }
 
-/// Traveling at 25% the speed of light to start
-/// Starting in our solar system
 // UPDATE ----------------------------------------------------------------------
 
 type Msg {
@@ -78,7 +76,7 @@ fn simulate(model: Model, hours: Int) -> Model {
   Model(day: new_day, hour: new_hour, speed: model.speed, position: util.move_towards(
     model.position,
     lucy.position,
-    model.speed,
+    model.speed *. int.to_float(hours),
   ))
 }
 
