@@ -8,7 +8,9 @@ pub const diorama_star = "#00b3ff"
 
 pub const diorama_star_text = "#303030ff"
 
-pub const diorama_lucy = "#ffaaff"
+pub const diorama_lucy = "#7d537dff"
+
+pub const diorama_lucy_tether = "#a571a5ff"
 
 pub const diorama_sol = "#ffff00"
 

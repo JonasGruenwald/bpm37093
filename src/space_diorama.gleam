@@ -44,7 +44,7 @@ fn init() -> Model {
     angle_x: 0.3,
     angle_y: 0.3,
     angle_z: 0.0,
-    scale: 8.0,
+    scale: 9.0,
     is_dragging: False,
     last_x: 0.0,
     last_y: 0.0,
@@ -71,8 +71,11 @@ fn render(model: Model, ctx: Context, width: Float, height: Float) -> Nil {
 
   canvas.set_font(ctx, "12px 'G2 Erika', sans-serif")
 
+  draw_rings(ctx, model, width, height)  
   draw_stars(ctx, model, width, height)
-  draw_rings(ctx, model, width, height)
+  draw_lucy(ctx, model, width, height)
+  draw_player(ctx, model, width, height)
+
 }
 
 fn project(
@@ -171,4 +174,72 @@ fn draw_star(
   // Draw star name
   canvas.set_fill_style(ctx, theme.diorama_star_text)
   canvas.fill_text(ctx, star.name, projected.x +. 5.0, projected.y -. 5.0)
+}
+
+fn draw_lucy(
+  ctx: Context,
+  model: Model,
+  canvas_width: Float,
+  canvas_height: Float,
+) {
+  let projected = project(model.lucy.position, model, canvas_width, canvas_height)
+
+  // Vertical tether line
+  canvas.set_stroke_style(ctx, theme.diorama_lucy_tether)
+  canvas.set_line_width(ctx, tether_line_width)
+  let ground_point =
+    project(
+      Vec3(x: model.lucy.position.x, y: 0.0, z: model.lucy.position.z),
+      model,
+      canvas_width,
+      canvas_height,
+    )
+  canvas.begin_path(ctx)
+  canvas.move_to(ctx, projected.x, projected.y)
+  canvas.line_to(ctx, ground_point.x, ground_point.y)
+  canvas.stroke(ctx)
+
+  // Indicator
+  canvas.set_fill_style(ctx, theme.diorama_lucy)
+  canvas.begin_path(ctx)
+  canvas.arc(ctx, projected.x, projected.y, star_min_size, 0.0, util.two_pi)
+  canvas.fill(ctx)
+
+  // Label
+  canvas.set_fill_style(ctx, theme.diorama_lucy)
+  canvas.fill_text(ctx, "Lucy", projected.x +. 5.0, projected.y -. 5.0)
+}
+
+fn draw_player(
+  ctx: Context,
+  model: Model,
+  canvas_width: Float,
+  canvas_height: Float,
+) {
+  let projected = project(model.player.position, model, canvas_width, canvas_height)
+
+  // Vertical tether line
+  canvas.set_stroke_style(ctx, theme.diorama_tether)
+  canvas.set_line_width(ctx, tether_line_width)
+  let ground_point =
+    project(
+      Vec3(x: model.player.position.x, y: 0.0, z: model.player.position.z),
+      model,
+      canvas_width,
+      canvas_height,
+    )
+  canvas.begin_path(ctx)
+  canvas.move_to(ctx, projected.x, projected.y)
+  canvas.line_to(ctx, ground_point.x, ground_point.y)
+  canvas.stroke(ctx)
+
+  // Indicator
+  canvas.set_fill_style(ctx, theme.diorama_player)
+  canvas.begin_path(ctx)
+  canvas.arc(ctx, projected.x, projected.y, star_min_size, 0.0, util.two_pi)
+  canvas.fill(ctx)
+
+  // Label
+  canvas.set_fill_style(ctx, theme.diorama_player)
+  canvas.fill_text(ctx, "You", projected.x +. 5.0, projected.y -. 5.0)
 }
