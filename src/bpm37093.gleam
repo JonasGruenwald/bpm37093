@@ -2,6 +2,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import theme
 import gleam/float
 import gleam/int
 import lustre
@@ -32,7 +33,7 @@ fn get_starting_speed() -> Float {
 pub fn main() {
   let assert Ok(_) = space_diorama.create()
   let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
+  let assert Ok(_) = lustre.start(app, "body", Nil)
 
   Nil
 }
@@ -102,31 +103,27 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(a)) {
 // VIEW ------------------------------------------------------------------------
 
 fn view(model: Model) -> Element(Msg) {
-  html.div([], [
-    // Labelled view functions give a similar experience to props in other
-    // frameworks, while still just being functions!
-    view_button(on_click: UserClickedTickButton, label: "Tick"),
-    view_int("Day", model.day),
-    view_int("Hour", model.hour),
-    view_float("Speed (ly/hour)", model.speed),
-    view_float("Position X (ly)", model.position.x),
-    view_float("Position Y (ly)", model.position.y),
-    view_float("Position Z (ly)", model.position.z),
-    html.div(
-      [
-       attribute.class("space-diorama-container")
-      ],
-      [
-        space_diorama.element()
-      ],
-    ),
-  ])
+  html.div(
+    [
+      attribute.id("root"),
+      attribute.style("--background", theme.background),
+      attribute.style("--text", theme.text),
+    ],
+    [
+      view_button(on_click: UserClickedTickButton, label: "Tick"),
+      view_int("Day", model.day),
+      view_int("Hour", model.hour),
+      view_float("Speed (ly/hour)", model.speed),
+      view_float("Position X (ly)", model.position.x),
+      view_float("Position Y (ly)", model.position.y),
+      view_float("Position Z (ly)", model.position.z),
+      html.div([attribute.class("space-diorama-container")], [
+        space_diorama.element(),
+      ]),
+    ],
+  )
 }
 
-/// Re-usable ui elements in Lustre most often take the form of "view functions".
-/// Because these are just Gleam functions, they can take any number of arguments
-/// and often include messages or event handlers.
-///
 fn view_button(on_click handle_click: msg, label text: String) -> Element(msg) {
   html.button([event.on_click(handle_click)], [html.text(text)])
 }
