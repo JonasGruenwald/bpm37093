@@ -293,13 +293,6 @@ pub const stars = [
   ),
 
   Object(
-    name: "*  70 Oph",
-    short_name: "*  70 Oph",
-    position: Vec3(x: 0.3941982965, y: -16.5592343943, z: 0.7232252419),
-    earth_distance: 16.579707198,
-  ),
-
-  Object(
     name: "Theta Bootis",
     short_name: "* tet Boo",
     position: Vec3(x: -23.5088821879, y: -17.268456333, z: 37.1356119305),
@@ -360,13 +353,6 @@ pub const stars = [
     short_name: "* bet CVn",
     position: Vec3(x: -20.5178061218, y: -3.042834053, z: 18.2593758438),
     earth_distance: 27.634109599,
-  ),
-
-  Object(
-    name: "* e Eri",
-    short_name: "* e Eri",
-    position: Vec3(x: 9.2561126598, y: 11.0239228901, z: -13.455930338),
-    earth_distance: 19.7044299263,
   ),
 
   Object(
@@ -447,31 +433,10 @@ pub const stars = [
   ),
 
   Object(
-    name: "*  61 Vir",
-    short_name: "*  61 Vir",
-    position: Vec3(x: -24.894647189, y: -8.8652256384, z: -8.7453056122),
-    earth_distance: 27.83551786,
-  ),
-
-  Object(
     name: "ksi Ursae Majoris B",
     short_name: "* ksi UMa B",
     position: Vec3(x: -23.8797738127, y: 4.4063932448, z: 14.8975683877),
     earth_distance: 28.4885493249,
-  ),
-
-  Object(
-    name: "* kap01 Cet",
-    short_name: "* kap01 Cet",
-    position: Vec3(x: 19.4782857577, y: 23.0824340833, z: 1.7786059531),
-    earth_distance: 30.255013112,
-  ),
-
-  Object(
-    name: "* h Dra",
-    short_name: "* h Dra",
-    position: Vec3(x: -5.7873273936, y: -20.1921813424, z: 45.3238471244),
-    earth_distance: 49.9546640854,
   ),
 
   Object(
@@ -510,31 +475,10 @@ pub const stars = [
   ),
 
   Object(
-    name: "*  36 Oph B",
-    short_name: "*  36 Oph B",
-    position: Vec3(x: -3.3579305553, y: -17.0171306986, z: -8.6869348898),
-    earth_distance: 19.3990018456,
-  ),
-
-  Object(
     name: "Alpha Men",
     short_name: "* alf Men",
     position: Vec3(x: -0.3913085507, y: 8.7510768877, z: -32.1373804546),
     earth_distance: 33.3098437637,
-  ),
-
-  Object(
-    name: "*  36 Oph A",
-    short_name: "*  36 Oph A",
-    position: Vec3(x: -3.3607539512, y: -17.03013366, z: -8.6931706611),
-    earth_distance: 19.4136893903,
-  ),
-
-  Object(
-    name: "* i Boo A",
-    short_name: "* i Boo A",
-    position: Vec3(x: -19.7762579897, y: -20.4408910175, z: 31.2066285425),
-    earth_distance: 42.2230277296,
   ),
 
   Object(
@@ -545,31 +489,10 @@ pub const stars = [
   ),
 
   Object(
-    name: "*  26 Dra",
-    short_name: "*  26 Dra",
-    position: Vec3(x: -2.4165450223, y: -22.05975232, z: 41.516933594),
-    earth_distance: 47.0757701723,
-  ),
-
-  Object(
-    name: "*  61 Cyg A",
-    short_name: "*  61 Cyg A",
-    position: Vec3(x: 6.4755013897, y: -6.0969251058, z: 7.1381031333),
-    earth_distance: 11.4042593067,
-  ),
-
-  Object(
     name: "BNU    2",
     short_name: "* zet02 Ret",
     position: Vec3(x: 11.7601590792, y: 13.795397621, z: -34.8324749829),
     earth_distance: 39.2672338028,
-  ),
-
-  Object(
-    name: "* 107 Psc",
-    short_name: "* 107 Psc",
-    position: Vec3(x: 21.0871658765, y: 10.1141446141, z: 8.636606199),
-    earth_distance: 24.9310138706,
   ),
 
   Object(
@@ -587,34 +510,6 @@ pub const stars = [
   ),
 
   Object(
-    name: "*  11 LMi",
-    short_name: "*  11 LMi",
-    position: Vec3(x: -24.0146720209, y: 17.5024332527, z: 21.4398325174),
-    earth_distance: 36.6429537621,
-  ),
-
-  Object(
-    name: "*  61 UMa",
-    short_name: "*  61 UMa",
-    position: Vec3(x: -25.7438333505, y: 2.1334618115, z: 17.5565436499),
-    earth_distance: 31.2334570583,
-  ),
-
-  Object(
-    name: "* 171 Pup",
-    short_name: "* 171 Pup",
-    position: Vec3(x: -18.3278216112, y: 36.9284309496, z: -27.9885865144),
-    earth_distance: 49.8294996211,
-  ),
-
-  Object(
-    name: "*  20 LMi",
-    short_name: "*  20 LMi",
-    position: Vec3(x: -35.874868522, y: 20.5019031406, z: 25.7430632621),
-    earth_distance: 48.6830517734,
-  ),
-
-  Object(
     name: "HD 147513",
     short_name: "HD 147513",
     position: Vec3(x: -13.252336621, y: -29.7727584792, z: -26.5722753327),
@@ -622,45 +517,10 @@ pub const stars = [
   ),
 
   Object(
-    name: "* w Her",
-    short_name: "* w Her",
-    position: Vec3(x: -6.8561148956, y: -39.5480623124, z: 25.5389419936),
-    earth_distance: 47.5740801517,
-  ),
-
-  Object(
     name: "HD 211415",
     short_name: "HD 211415",
     position: Vec3(x: 24.5696872404, y: -11.6849140133, z: -36.9388567429),
     earth_distance: 45.876855647,
-  ),
-
-  Object(
-    name: "*  41 Ara",
-    short_name: "*  41 Ara",
-    position: Vec3(x: -3.4978558045, y: -19.374272538, z: -20.8453317732),
-    earth_distance: 28.6727272567,
-  ),
-
-  Object(
-    name: "*  18 Sco",
-    short_name: "*  18 Sco",
-    position: Vec3(x: -20.0649857805, y: -40.9673103702, z: -6.7112943697),
-    earth_distance: 46.1081949924,
-  ),
-
-  Object(
-    name: "*  58 Eri",
-    short_name: "*  58 Eri",
-    position: Vec3(x: 12.8333555831, y: 39.2665214884, z: -12.5782204993),
-    earth_distance: 43.1829405698,
-  ),
-
-  Object(
-    name: "* zet01 Ret",
-    short_name: "* zet01 Ret",
-    position: Vec3(x: 11.7647956353, y: 13.7467723128, z: -34.8696322013),
-    earth_distance: 39.2845442282,
   ),
 
   Object(
@@ -699,13 +559,6 @@ pub const stars = [
   ),
 
   Object(
-    name: "* p Eri A",
-    short_name: "* p Eri A",
-    position: Vec3(x: 13.474562897, y: 6.2687587878, z: -22.1940931635),
-    earth_distance: 26.7102780471,
-  ),
-
-  Object(
     name: "HD 131977",
     short_name: "HD 131977",
     position: Vec3(x: -12.7771715762, y: -12.4977786229, z: -7.0099939509),
@@ -727,20 +580,6 @@ pub const stars = [
   ),
 
   Object(
-    name: "*  85 Peg",
-    short_name: "*  85 Peg",
-    position: Vec3(x: 35.7706175712, y: 0.3390879378, z: 18.2912620076),
-    earth_distance: 40.1773857771,
-  ),
-
-  Object(
-    name: "*  12 Oph",
-    short_name: "*  12 Oph",
-    position: Vec3(x: -11.50794159, y: -30.1195572321, z: -1.3088773522),
-    earth_distance: 32.2697010742,
-  ),
-
-  Object(
     name: "HD   4391",
     short_name: "HD   4391",
     position: Vec3(x: 32.4685190862, y: 6.5703766684, z: -36.2173045232),
@@ -748,24 +587,10 @@ pub const stars = [
   ),
 
   Object(
-    name: "* p Eri B",
-    short_name: "* p Eri B",
-    position: Vec3(x: 13.4852054441, y: 6.2734141874, z: -22.2140612545),
-    earth_distance: 26.7333314208,
-  ),
-
-  Object(
     name: "HD 172051",
     short_name: "HD 172051",
     position: Vec3(x: 6.6983931294, y: -39.0947495714, z: -15.2669705194),
     earth_distance: 42.5011564949,
-  ),
-
-  Object(
-    name: "*  54 Psc",
-    short_name: "*  54 Psc",
-    position: Vec3(x: 33.2693118408, y: 5.7710420979, z: 13.1312555177),
-    earth_distance: 36.2295722956,
   ),
 
   Object(
@@ -790,27 +615,6 @@ pub const stars = [
   ),
 
   Object(
-    name: "*  20 Crt",
-    short_name: "*  20 Crt",
-    position: Vec3(x: -26.0352524019, y: 2.9098035523, z: -16.9033301167),
-    earth_distance: 31.1772977241,
-  ),
-
-  Object(
-    name: "V* DE Boo",
-    short_name: "V* DE Boo",
-    position: Vec3(x: -26.0541033602, y: -24.5942671175, z: 12.4437795378),
-    earth_distance: 37.9281152463,
-  ),
-
-  Object(
-    name: "* i Boo B",
-    short_name: "* i Boo B",
-    position: Vec3(x: -19.5623839312, y: -20.2206675488, z: 30.8703440927),
-    earth_distance: 41.767695718,
-  ),
-
-  Object(
     name: "HD 140901",
     short_name: "HD 140901",
     position: Vec3(x: -21.4402488625, y: -32.85323412, z: -30.5579246556),
@@ -818,24 +622,10 @@ pub const stars = [
   ),
 
   Object(
-    name: "*  61 Cyg B",
-    short_name: "*  61 Cyg B",
-    position: Vec3(x: 6.4765195337, y: -6.0967072177, z: 7.1366964958),
-    earth_distance: 11.4038406268,
-  ),
-
-  Object(
     name: "HD  17925",
     short_name: "HD  17925",
     position: Vec3(x: 24.0497359856, y: 22.5320240194, z: -7.4690467754),
     earth_distance: 33.7915457936,
-  ),
-
-  Object(
-    name: "*  70 Oph B",
-    short_name: "*  70 Oph B",
-    position: Vec3(x: 0.3961520018, y: -16.6322678722, z: 0.7260801104),
-    earth_distance: 16.6528214819,
   ),
 
   Object(
@@ -850,13 +640,6 @@ pub const stars = [
     short_name: "HD  13445",
     position: Vec3(x: 18.6773577741, y: 11.9483398923, z: -27.208815109),
     earth_distance: 35.098805382,
-  ),
-
-  Object(
-    name: "V* AK Lep",
-    short_name: "V* AK Lep",
-    position: Vec3(x: 1.8184182361, y: 26.7462314699, z: -11.0614051806),
-    earth_distance: 29.0003832266,
   ),
 
   Object(
@@ -892,13 +675,6 @@ pub const stars = [
     short_name: "HD  14412",
     position: Vec3(x: 30.9306185896, y: 21.4523521611, z: -18.3149922177),
     earth_distance: 41.8610262597,
-  ),
-
-  Object(
-    name: "V* V2215 Oph",
-    short_name: "V* V2215 Oph",
-    position: Vec3(x: -3.2980238368, y: -17.0553292946, z: -8.6784754426),
-    earth_distance: 19.4184745689,
   ),
 
   Object(

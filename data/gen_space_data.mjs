@@ -24,7 +24,9 @@ import space.{Object}
 
 `
 
-const starDefinitions = brightestStars.map(star => toSpaceObject(star)).join(",\n\n");
+const starDefinitions = brightestStars
+  .filter(s => !s.full_name.includes("*"))
+  .map(star => toSpaceObject(star)).join(",\n\n");
 
 const starListDefinition = `/// Star list
 pub const stars = [
