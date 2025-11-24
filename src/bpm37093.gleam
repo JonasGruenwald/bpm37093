@@ -2,7 +2,7 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
-import theme
+import gleam/list
 import gleam/float
 import gleam/int
 import lustre
@@ -12,6 +12,7 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
 import space_data.{lucy, sol, stars}
+import theme
 
 import space_diorama
 import util
@@ -40,16 +41,39 @@ pub fn main() {
 
 // MODEL -----------------------------------------------------------------------
 
+type Action(msg) {
+  Action(
+    label: String,
+    description: String,
+    perform: fn(Model) -> #(Model, effect.Effect(Msg)),
+  )
+}
+
 type Model {
   Model(
-    /// Day of progression, starting at 1
+    // Day of progression, starting at 1
     day: Int,
-    /// Hour of the day, 0-23
+    // Hour of the day, 0-23
     hour: Int,
-    /// Speed of the craft, in lightyears per tick (game hour)
+    // Speed of the craft, in lightyears per tick (game hour)
     speed: Float,
-    /// Current 3D position in space
+    // Current 3D position in space
     position: Vec3(Float),
+    // Actions available to the user
+    actions: List(Action(Msg)),
+  )
+}
+
+fn new_pilot_ship_action() -> Action(Msg) {
+  Action(
+    label: "Pilot Ship",
+    description: "Manually pilot the ship towards the destination for one hour.",
+    perform: fn(model: Model) -> #(Model, effect.Effect(Msg)) {
+      Model(..simulate(model, 1), actions: [
+        new_pilot_ship_action(),
+      ])
+      |> set_state
+    },
   )
 }
 
@@ -59,18 +83,21 @@ fn set_state(model: Model) -> #(Model, effect.Effect(a)) {
 }
 
 fn init(_) -> #(Model, effect.Effect(a)) {
-  set_state(Model(
-    day: 1,
-    hour: 0,
-    speed: get_starting_speed(),
-    position: sol.position,
-  ))
+  set_state(
+    Model(
+      day: 1,
+      hour: 0,
+      speed: get_starting_speed(),
+      position: sol.position,
+      actions: [new_pilot_ship_action()],
+    ),
+  )
 }
 
 // UPDATE ----------------------------------------------------------------------
 
 type Msg {
-  UserClickedTickButton
+  UserClickedActionButton(action: Action(Msg))
 }
 
 fn simulate(model: Model, hours: Int) -> Model {
@@ -83,9 +110,9 @@ fn simulate(model: Model, hours: Int) -> Model {
   }
 
   Model(
+    ..model,
     day: new_day,
     hour: new_hour,
-    speed: model.speed,
     position: util.move_towards(
       model.position,
       lucy.position,
@@ -94,9 +121,11 @@ fn simulate(model: Model, hours: Int) -> Model {
   )
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(a)) {
+fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
-    UserClickedTickButton -> simulate(model, 1) |> set_state
+    UserClickedActionButton(action) -> {
+      action.perform(model)
+    }
   }
 }
 
@@ -110,13 +139,21 @@ fn view(model: Model) -> Element(Msg) {
       attribute.style("--text", theme.text),
     ],
     [
-      view_button(on_click: UserClickedTickButton, label: "Tick"),
-      view_int("Day", model.day),
-      view_int("Hour", model.hour),
-      view_float("Speed (ly/hour)", model.speed),
-      view_float("Position X (ly)", model.position.x),
-      view_float("Position Y (ly)", model.position.y),
-      view_float("Position Z (ly)", model.position.z),
+      html.div([attribute.class("game-panel")], [
+        html.div(
+          [attribute.class("actions-container")],
+          list.map(model.actions, fn(action) -> Element(Msg) {
+            view_button(UserClickedActionButton(action), action.label)
+          }),
+        ),
+        view_int("Day", model.day),
+        view_int("Hour", model.hour),
+        view_float("Speed (ly/hour)", model.speed),
+        view_float("Position X (ly)", model.position.x),
+        view_float("Position Y (ly)", model.position.y),
+        view_float("Position Z (ly)", model.position.z),
+      ]),
+
       html.div([attribute.class("space-diorama-container")], [
         space_diorama.element(),
       ]),
