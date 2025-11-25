@@ -69,7 +69,6 @@ export const register_component = (name, init, update, render, attribute_handler
       );
 
       this.#resizeObserver = new ResizeObserver(() => {
-        console.log("[canvas] Resized");
         this.#resizeCanvas();
         this.#render(this.#model, this.#ctx, this.#bounds.width, this.#bounds.height);
       });
@@ -93,7 +92,7 @@ export const register_component = (name, init, update, render, attribute_handler
     attributeChangedCallback(name, oldValue, newValue) {
       const handler = attributeMap[name];
       if (handler) {
-        this.#model = handler(newValue);
+        this.#model = handler(newValue, this.#model);
       } else {
         throw new Error(`No handler for attribute: ${name}`);
       }

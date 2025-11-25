@@ -24,7 +24,7 @@ pub fn register_component(
   render render: fn(model, Context, Float, Float) -> Nil,
   // Attribute handlers are called when the specified attribute changes
   // and can update the model in response
-  attribute_handlers attribute_handlers: List(#(String, fn(String) -> model)),
+  attribute_handlers attribute_handlers: List(#(String, fn(String, model) -> model)),
 ) -> Result(Nil, Nil)
 
 @external(javascript, "./canvas_ffi.mjs", "set_fill_style")

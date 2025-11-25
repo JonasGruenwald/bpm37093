@@ -2,6 +2,8 @@
 
 // IMPORTS ---------------------------------------------------------------------
 
+import gleam/json
+import space
 import gleam/list
 import gleam/float
 import gleam/int
@@ -13,7 +15,7 @@ import lustre/element/html
 import lustre/event
 import space_data.{lucy, sol, stars}
 import theme
-
+import console
 import space_diorama
 import util
 import vec/vec3.{type Vec3}
@@ -32,6 +34,7 @@ fn get_starting_speed() -> Float {
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
+  console.info("Let's go!")
   let assert Ok(_) = space_diorama.create()
   let app = lustre.application(init, update, view)
   let assert Ok(_) = lustre.start(app, "body", Nil)
@@ -77,6 +80,21 @@ fn new_pilot_ship_action() -> Action(Msg) {
   )
 }
 
+fn create_debug_hyperdrive_action() -> Action(Msg) {
+  Action(
+    label: "DEBUG Hyperdrive ",
+    description: "Gotta go fast!",
+    perform: fn(model: Model) -> #(Model, effect.Effect(Msg)) {
+      set_state(
+        Model(
+          ..model,
+          speed: 1.0
+        )
+      )
+    },
+  )
+}
+
 /// Shorthand for setting the model state without any effects.
 fn set_state(model: Model) -> #(Model, effect.Effect(a)) {
   #(model, effect.none())
@@ -89,7 +107,7 @@ fn init(_) -> #(Model, effect.Effect(a)) {
       hour: 0,
       speed: get_starting_speed(),
       position: sol.position,
-      actions: [new_pilot_ship_action()],
+      actions: [new_pilot_ship_action(), create_debug_hyperdrive_action()],
     ),
   )
 }
@@ -124,6 +142,7 @@ fn simulate(model: Model, hours: Int) -> Model {
 fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
     UserClickedActionButton(action) -> {
+      console.info("User clicked action button: " <> action.label)
       action.perform(model)
     }
   }
@@ -154,8 +173,12 @@ fn view(model: Model) -> Element(Msg) {
         view_float("Position Z (ly)", model.position.z),
       ]),
 
-      html.div([attribute.class("space-diorama-container")], [
-        space_diorama.element(),
+      html.div([
+        attribute.class("space-diorama-container"),
+        ], [
+        space_diorama.element(
+          player: model.position,
+        ),
       ]),
     ],
   )

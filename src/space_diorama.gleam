@@ -1,6 +1,9 @@
 import canvas.{type Context, type Event, Tick}
+import console
+import gleam/json
 import gleam/list
 import gleam_community/maths
+import lustre/attribute
 import lustre/element.{type Element}
 import space
 import space_data
@@ -12,11 +15,34 @@ import vec/vec3.{type Vec3, Vec3}
 pub const component = "space-diorama"
 
 pub fn create() -> Result(Nil, Nil) {
-  canvas.register_component(component, init, update, render, [])
+  canvas.register_component(component, init, update, render, [
+    #("player", fn(data: String, model: Model) {
+      case json.parse(data, util.vec3_decoder()) {
+        Ok(position) -> {
+          Model(..model, player: space.Object(..model.player, position:))
+        }
+        Error(e) -> {
+          console.error("Failed to parse 'player' attribute JSON")
+          console.error(data)
+          console.error(e)
+          model
+        }
+      }
+    }),
+  ])
 }
 
-pub fn element() -> Element(msg) {
-  element.element(component, [], [])
+pub fn element(player player_position: Vec3(Float)) -> Element(msg) {
+  element.element(
+    component,
+    [
+      attribute.attribute(
+        "player",
+        util.vec3_to_json(player_position) |> json.to_string,
+      ),
+    ],
+    [],
+  )
 }
 
 type Model {
@@ -71,11 +97,10 @@ fn render(model: Model, ctx: Context, width: Float, height: Float) -> Nil {
 
   canvas.set_font(ctx, "12px 'G2 Erika', sans-serif")
 
-  draw_rings(ctx, model, width, height)  
+  draw_rings(ctx, model, width, height)
   draw_stars(ctx, model, width, height)
   draw_lucy(ctx, model, width, height)
   draw_player(ctx, model, width, height)
-
 }
 
 fn project(
@@ -91,7 +116,8 @@ fn project(
     |> util.rotate_z(model.angle_z)
 
   Vec2(
-    x: { rotated.x *. model.scale } +. { width /. 2.0 },
+    // Center horizontally on the riught two-thirds of the canvas
+    x: { rotated.x *. model.scale } +. { width *. 0.66 },
     y: { height /. 2.0 } -. { rotated.y *. model.scale },
   )
 }
@@ -182,7 +208,8 @@ fn draw_lucy(
   canvas_width: Float,
   canvas_height: Float,
 ) {
-  let projected = project(model.lucy.position, model, canvas_width, canvas_height)
+  let projected =
+    project(model.lucy.position, model, canvas_width, canvas_height)
 
   // Vertical tether line
   canvas.set_stroke_style(ctx, theme.diorama_lucy_tether)
@@ -216,7 +243,8 @@ fn draw_player(
   canvas_width: Float,
   canvas_height: Float,
 ) {
-  let projected = project(model.player.position, model, canvas_width, canvas_height)
+  let projected =
+    project(model.player.position, model, canvas_width, canvas_height)
 
   // Vertical tether line
   canvas.set_stroke_style(ctx, theme.diorama_tether)

@@ -1,7 +1,10 @@
+import gleam/dynamic/decode
 import gleam/float
+import gleam/json
 import gleam_community/maths
 import vec/vec3.{type Vec3, Vec3}
 import vec/vec3f
+
 
 pub fn move_towards(from: Vec3(Float), to: Vec3(Float), distance: Float) {
   let direction = vec3f.subtract(to, from)
@@ -50,4 +53,20 @@ pub fn rotate_z(point: Vec3(Float), angle: Float) -> Vec3(Float) {
   )
 }
 
-pub const two_pi = 6.283185307179586 
+pub fn vec3_to_json(vector: Vec3(Float)) -> json.Json {
+  let Vec3(x:, y:, z:) = vector
+  json.object([
+    #("x", json.float(x)),
+    #("y", json.float(y)),
+    #("z", json.float(z)),
+  ])
+}
+
+pub fn vec3_decoder() -> decode.Decoder(Vec3(Float)) {
+  use x <- decode.field("x", decode.float)
+  use y <- decode.field("y", decode.float)
+  use z <- decode.field("z", decode.float)
+  decode.success(Vec3(x:, y:, z:))
+}
+
+pub const two_pi = 6.283185307179586
