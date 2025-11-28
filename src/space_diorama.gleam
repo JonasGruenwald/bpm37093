@@ -33,6 +33,10 @@ const rings = [10.0, 20.0, 30.0, 40.0, 50.0]
 
 const ring_line_width = 1.0
 
+const player_cross_line_width = 1.0
+
+const player_cross_size = 5.0
+
 const max_star_name_distance = 100.0
 
 pub fn create() -> Result(Nil, Nil) {
@@ -273,11 +277,15 @@ fn draw_player(
   let projected =
     project(model.player.position, model, canvas_width, canvas_height)
 
-  // Indicator
-  canvas.set_fill_style(ctx, theme.diorama_player)
+  // Indicator cross
+  canvas.set_stroke_style(ctx, theme.diorama_player)
+  canvas.set_line_width(ctx, player_cross_line_width)
   canvas.begin_path(ctx)
-  canvas.arc(ctx, projected.x, projected.y, star_min_size, 0.0, util.two_pi)
-  canvas.fill(ctx)
+  canvas.move_to(ctx, projected.x, projected.y -. player_cross_size)
+  canvas.line_to(ctx, projected.x, projected.y +. player_cross_size)
+  canvas.move_to(ctx, projected.x -. player_cross_size, projected.y)
+  canvas.line_to(ctx, projected.x +. player_cross_size, projected.y)
+  canvas.stroke(ctx)
 
   // Label
   canvas.set_font(ctx, font_bold)

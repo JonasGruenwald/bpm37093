@@ -71,12 +71,27 @@ type Response {
   // the label will be written to the log
   PromptResponse(label: String, prompt: Prompt)
   // A response which allows the user to perform an action on the model
-  ActionResponse(label: String, action: Action)
+  ActionResponse(
+    label: String,
+    perform: fn(Model) -> #(Model, effect.Effect(Msg)),
+  )
   // Response which just proceeds to the next prompt
   // like PromptResponse, but the label won't be written to the log
   ContinueResponse(label: String, prompt: Prompt)
-  // Response which ends the current prompt/encounter
   EndResponse(label: String)
+}
+
+fn new(message: String) -> Prompt {
+  Prompt(message:, responses: [])
+}
+
+fn line(prompt: Prompt, message: String) -> Prompt {
+  Prompt(..prompt, responses: [
+    ContinueResponse(
+      label: continue_glyph,
+      prompt: Prompt(message:, responses: []),
+    ),
+  ])
 }
 
 type Model {
@@ -95,8 +110,10 @@ type Model {
     prompt: Option(Prompt),
     // Log of past messages from prompts IN REVERSE
     message_log: List(Message),
+    // Game state flags
     autopilot_available: Bool,
     autopilot_enabled: Bool,
+    accepted_crew_help: Bool,
   )
 }
 
@@ -108,6 +125,10 @@ fn set_state(model: Model) -> #(Model, effect.Effect(a)) {
 /// Shorthand for setting a prompt in the model state.
 fn set_prompt(model: Model, prompt: Prompt) -> #(Model, effect.Effect(a)) {
   set_state(Model(..model, prompt: Some(prompt)))
+}
+
+fn log_message(model: Model, message: Message) {
+  Model(..model, message_log: [message, ..model.message_log], prompt: None)
 }
 
 /// Build list of linear dialogue options into a prompt tree
@@ -144,6 +165,7 @@ fn init(_) -> #(Model, effect.Effect(a)) {
     message_log: [],
     autopilot_available: False,
     autopilot_enabled: False,
+    accepted_crew_help: False,
   ))
 }
 
@@ -157,8 +179,43 @@ The machinist and the navigator step in.",
     "Navigator: I think there must be some kind of error with the coordinates you gave us?",
   ]
 
-  // TODO add dialogue here
-  linear_dialogue(intro_chain, [EndResponse("x")])
+  let continuation_chain = [
+    "Navigator: 12 hours 38 minutes 49.78112 seconds right ascension, -49 degrees 48 minutes 0.2195 seconds declination? That's almost fifty light years from sol!",
+    "Machinist: This scrap collection vessel. Not equipped for FTL travel. Won't even reach light speed with current config. Die of old age before we arrive.",
+  ]
+
+  let accept_crew_guidance = fn(model: Model) {
+    let prompt =
+      [
+        "Navigator: No way we'll get this far without a working autopilot system...",
+        "Machinist: Have to tink.",
+      ]
+      |> linear_dialogue([EndResponse(label: continue_glyph)])
+    #(
+      Model(..model, accepted_crew_help: True, prompt: Some(prompt)),
+      effect.none(),
+    )
+  }
+
+  let final_decisions = [
+    ActionResponse(label: "We'll get there.", perform: accept_crew_guidance),
+    ActionResponse(
+      label: "Then we better think of some way to get there quicker.",
+      perform: accept_crew_guidance,
+    ),
+    EndResponse(label: "None of your concern, you are dismissed."),
+    ActionResponse(
+      label: "I need your help with this.",
+      perform: accept_crew_guidance,
+    ),
+  ]
+
+  let continuation = linear_dialogue(continuation_chain, final_decisions)
+
+  linear_dialogue(intro_chain, [
+    PromptResponse(label: "There is no error", prompt: continuation),
+    PromptResponse(label: "What's the matter?", prompt: continuation),
+  ])
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -192,16 +249,13 @@ fn handle_response(
   model: Model,
 ) -> #(Model, effect.Effect(Msg)) {
   // Shift processed prompt to log
-  let model =
-    Model(
-      ..model,
-      message_log: [prompt.message, ..model.message_log],
-      prompt: None,
-    )
+  let model = log_message(model, prompt.message)
   // handle selected response
   case response {
-    ActionResponse(label: _, action:) -> handle_action(action, model)
-    EndResponse(label: _) -> set_state(model)
+    ActionResponse(label: label, perform:) ->
+      Model(..model, message_log: ["«" <> label <> "»", ..model.message_log])
+      |> perform()
+    EndResponse(label: _) -> set_state(Model(..model, message_log: []))
     ContinueResponse(label: _, prompt:) ->
       set_state(Model(..model, prompt: Some(prompt)))
     PromptResponse(label:, prompt:) ->
@@ -244,10 +298,13 @@ fn available_actions(model: Model) -> List(Action) {
   |> option.values()
 }
 
+fn view_status(model: Model) {
+  html.text("You have the deck, all systems are running normally")
+}
+
 // VIEW ------------------------------------------------------------------------
 
 fn view(model: Model) -> Element(Msg) {
-  let actions = available_actions(model)
   html.div(
     [
       attribute.id("root"),
@@ -257,10 +314,13 @@ fn view(model: Model) -> Element(Msg) {
     [
       html.div([attribute.class("top-bar")], [
         html.div([attribute.class("speed-indicator")], [
-          html.text("Ship Speed: " <> util.format_speed_long(model.speed))
+          html.text("Ship Speed: " <> util.format_speed_long(model.speed)),
         ]),
         html.div([attribute.class("distance-indicator")], [
-          html.text("Distance to Lucy: " <> util.format_distance_long(model.distance_to_lucy))
+          html.text(
+            "Distance to Lucy: "
+            <> util.format_distance_long(model.distance_to_lucy),
+          ),
         ]),
         html.div([attribute.class("calendar")], [
           html.text(
@@ -281,9 +341,9 @@ fn view(model: Model) -> Element(Msg) {
         {
           case model.prompt {
             Some(prompt) -> view_prompt(prompt)
-            None -> view_actions(actions)
+            None -> view_actions(model)
           }
-        }
+        },
       ]),
 
       html.div(
@@ -313,11 +373,15 @@ fn view_prompt(prompt: Prompt) {
   ])
 }
 
-fn view_actions(actions: List(Action)) {
-  html.div(
-    [attribute.class("actions-container")],
-    list.map(actions, fn(action) -> Element(Msg) { view_action(action) }),
-  )
+fn view_actions(model: Model) {
+  let actions = available_actions(model)
+  html.div([attribute.class("prompt")], [
+    html.div([attribute.class("prompt-content")], [view_status(model)]),
+    html.div(
+      [attribute.class("actions-container")],
+      list.map(actions, fn(action) -> Element(Msg) { view_action(action) }),
+    ),
+  ])
 }
 
 fn view_action(a: Action) {
