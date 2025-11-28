@@ -39,14 +39,18 @@
 }
 
 :root {
-  --font: "G2 Erika", sans-serif;
-  --default-font-weight: 400;
-  --default-font-size: 18px;
-  --margin: 15px;
+  --default-font: "G2 Erika", sans-serif;
+  --default-font-weight: 300;
+  --default-font-size: 20px;
+  --default-margin: 15px;
+  --default-margin-medium: 10px;
+  --default-margin-small: 5px;
+  --default-line-width: 1px;
+  --default-border-radius: 0;
 }
 
 * {
-  font-family: var(--font);
+  font-family: var(--default-font);
   font-weight: var(--default-font-weight);
   font-size: var(--default-font-size);
   box-sizing: border-box;
@@ -57,6 +61,39 @@ body {
   padding: 0;
 }
 
+button,
+.button-like {
+  font-family: var(--default-font);
+  font-weight: var(--default-font-weight);
+  font-size: var(--default-font-size);
+  cursor: pointer;
+  padding: var(--default-margin-small) var(--default-margin-medium);
+  background: var(--background);
+  border: var(--default-line-width) solid var(--text);
+  color: var(--text);
+  border-radius: var(--default-border-radius);
+  user-select: none;
+  transition: all 100ms;
+}
+
+button:hover,
+.button-like:hover {
+  background: var(--text);
+  color: var(--background);
+}
+
+button:disabled,
+.button-like:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+button:active,
+.button-like:active {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--text);
+}
+
 #root {
   width: 100vw;
   height: 100vh;
@@ -64,9 +101,30 @@ body {
   color: var(--text);
 }
 
-.game-panel{
-  max-width: 33vw;
-  padding: var(--margin);
+.top-bar {
+  width: 100vw;
+  padding: var(--default-margin);
+  display: flex;
+  justify-content: space-between;
+}
+
+.top-bar > div {
+  flex: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.top-bar > div:first-of-type {
+  text-align: left;
+}
+
+.top-bar > div:last-of-type {
+  text-align: right;
+}
+
+.game-panel {
+  max-width: 36vw;
+  padding: var(--default-margin);
 }
 
 .space-diorama-container {
@@ -79,4 +137,15 @@ body {
   margin: 0;
   padding: 0;
   z-index: -1;
+}
+
+.message{
+  margin-bottom: var(--default-margin);
+}
+
+.actions-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--default-margin-small);
+  margin-top: var(--default-margin);
 }

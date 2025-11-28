@@ -8,6 +8,7 @@ import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/string
 import lustre
 import lustre/attribute
 import lustre/effect
@@ -156,7 +157,8 @@ The machinist and the navigator step in.",
     "Navigator: I think there must be some kind of error with the coordinates you gave us?",
   ]
 
-  linear_dialogue(intro_chain, [])
+  // TODO add dialogue here
+  linear_dialogue(intro_chain, [EndResponse("x")])
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -253,6 +255,23 @@ fn view(model: Model) -> Element(Msg) {
       attribute.style("--text", theme.text),
     ],
     [
+      html.div([attribute.class("top-bar")], [
+        html.div([attribute.class("speed-indicator")], [
+          html.text("Ship Speed: " <> util.format_speed_long(model.speed))
+        ]),
+        html.div([attribute.class("distance-indicator")], [
+          html.text("Distance to Lucy: " <> util.format_distance_long(model.distance_to_lucy))
+        ]),
+        html.div([attribute.class("calendar")], [
+          html.text(
+            "Day: "
+            <> int.to_string(model.day)
+            <> " — "
+            <> model.hour |> int.to_string |> string.pad_start(2, "0")
+            <> ":00",
+          ),
+        ]),
+      ]),
       html.div([attribute.class("game-panel")], [
         html.div(
           [attribute.class("message-log")],
@@ -264,15 +283,7 @@ fn view(model: Model) -> Element(Msg) {
             Some(prompt) -> view_prompt(prompt)
             None -> view_actions(actions)
           }
-        },
-        view_int("Day", model.day),
-        view_int("Hour", model.hour),
-        view_float("Speed (ly/hour)", model.speed),
-        view_float("Position X (ly)", model.position.x),
-        view_float("Position Y (ly)", model.position.y),
-        view_float("Position Z (ly)", model.position.z),
-        view_float("Distance Traveled (ly)", model.distance_traveled),
-        view_float("Distance to Lucy (ly)", model.distance_to_lucy),
+        }
       ]),
 
       html.div(
@@ -336,20 +347,4 @@ fn view_action_button(action: Action, title: String, _tooltip: String) {
 
 fn view_button(on_click handle_click: msg, label text: String) -> Element(msg) {
   html.button([event.on_click(handle_click)], [html.text(text)])
-}
-
-fn view_int(label: String, count: Int) -> Element(msg) {
-  html.p(
-    [
-      attribute.class(case count > 10 {
-        True -> "text-red-500 font-bold"
-        False -> ""
-      }),
-    ],
-    [html.text(label <> ": "), html.text(int.to_string(count))],
-  )
-}
-
-fn view_float(label: String, value: Float) -> Element(msg) {
-  html.p([], [html.text(label <> ": "), html.text(float.to_string(value))])
 }

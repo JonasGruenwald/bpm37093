@@ -32,6 +32,7 @@ export const register_component = (name, init, update, render, attribute_handler
     #canvas;
     #ctx;
     #model;
+    #initialAttributes = []
 
     // User-defined
     #init;
@@ -53,6 +54,10 @@ export const register_component = (name, init, update, render, attribute_handler
 
     connectedCallback() {
       this.#model = this.#init();
+      for (const [name, value] of this.#initialAttributes) {
+        this.#handleAttribute(name, value);
+      }
+      this.#initialAttributes = [];
       this.#resizeCanvas();
       window.requestAnimationFrame(this.#loop);
 
@@ -64,9 +69,9 @@ export const register_component = (name, init, update, render, attribute_handler
         this.#handleMouseUp
       );
 
-      this.#canvas.addEventListener("mousemove",
+      window.addEventListener("mousemove",
         this.#handleMouseMove
-      );
+        )
 
       this.#resizeObserver = new ResizeObserver(() => {
         this.#resizeCanvas();
@@ -84,19 +89,27 @@ export const register_component = (name, init, update, render, attribute_handler
       this.#canvas.removeEventListener("mouseup",
         this.#handleMouseUp
       );
-      this.#canvas.removeEventListener("mousemove",
+      window.removeEventListener("mousemove",
         this.#handleMouseMove
       );
     }
 
-    attributeChangedCallback(name, oldValue, newValue) {
+    attributeChangedCallback(name, _oldValue, newValue) {
+      if (this.#model) {
+        this.#handleAttribute(name, newValue);
+      } else {
+        this.#initialAttributes.push([name, newValue]);
+      }
+    }
+
+    #handleAttribute = (name, newValue) => {
       const handler = attributeMap[name];
       if (handler) {
         this.#model = handler(newValue, this.#model);
       } else {
         throw new Error(`No handler for attribute: ${name}`);
       }
-    }
+    };
 
     #handleMouseDown = (e) => {
       const x = e.offsetX;
@@ -129,12 +142,12 @@ export const register_component = (name, init, update, render, attribute_handler
     }
 
     #handleMouseMove = (e) => {
-      const x = e.offsetX;
-      const y = e.offsetY;
+      const x = this.#bounds.left + e.clientX;
+      const y = this.#bounds.top + e.clientY;
       this.#model = this.#update(this.#model, Event$MouseMoved(x, y));
     }
 
-    #resizeCanvas() {
+    #resizeCanvas = () => {
       this.#bounds = this.#canvas.getBoundingClientRect();
       const { width, height } = this.#bounds;
       this.#canvas.width = width * window.devicePixelRatio;
