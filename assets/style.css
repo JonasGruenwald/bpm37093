@@ -94,11 +94,28 @@ button:active,
   box-shadow: 0 0 0 2px var(--text);
 }
 
+*::selection {
+  background: var(--text);
+  color: var(--background);
+}
+
+
 #root {
   width: 100vw;
   height: 100vh;
   height: 100dvh;
   color: var(--text);
+  display: flex;
+  flex-direction: column;
+}
+
+.hidden-for-intro {
+  opacity: 1;
+  transition: all 1s;
+}
+
+.hidden-for-intro.hidden {
+  opacity: 0;
 }
 
 .top-bar {
@@ -106,6 +123,11 @@ button:active,
   padding: var(--default-margin);
   display: flex;
   justify-content: space-between;
+  user-select: none;
+}
+
+.top-bar.hidden {
+  opacity: 0;
 }
 
 .top-bar > div {
@@ -125,6 +147,16 @@ button:active,
 .game-panel {
   max-width: 36vw;
   padding: var(--default-margin);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+
+.interaction-box {
+  overflow-y: auto;
+  flex-grow: 2;
 }
 
 .space-diorama-container {
@@ -139,7 +171,7 @@ button:active,
   z-index: -1;
 }
 
-.message{
+.message {
   margin-bottom: var(--default-margin);
 }
 

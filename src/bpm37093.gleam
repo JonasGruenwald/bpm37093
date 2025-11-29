@@ -57,6 +57,7 @@ type Message =
 type Action {
   PilotShipAction
   DisableAutoPilotAction
+  EnableAutoPilotAction
 }
 
 /// Used to represent encounters and dialogue
@@ -81,19 +82,6 @@ type Response {
   EndResponse(label: String)
 }
 
-fn new(message: String) -> Prompt {
-  Prompt(message:, responses: [])
-}
-
-fn line(prompt: Prompt, message: String) -> Prompt {
-  Prompt(..prompt, responses: [
-    ContinueResponse(
-      label: continue_glyph,
-      prompt: Prompt(message:, responses: []),
-    ),
-  ])
-}
-
 type Model {
   Model(
     // Day of progression, starting at 1
@@ -110,10 +98,18 @@ type Model {
     prompt: Option(Prompt),
     // Log of past messages from prompts IN REVERSE
     message_log: List(Message),
-    // Game state flags
+    // Flags
     autopilot_available: Bool,
     autopilot_enabled: Bool,
+    intro_completed: Bool,
     accepted_crew_help: Bool,
+    // Resources
+    scrap: Int,
+    credits: Int,
+    speed_upgrades: Int,
+    // Checkpoints (at points of distance_traveled)
+    last_waystation_at: Float,
+    last_scrap_discovery_at: Float,
   )
 }
 
@@ -163,9 +159,15 @@ fn init(_) -> #(Model, effect.Effect(a)) {
     distance_to_lucy: vec3f.distance(sol.position, lucy.position),
     prompt: Some(create_initro_dialogue()),
     message_log: [],
-    autopilot_available: False,
+    autopilot_available: True,
     autopilot_enabled: False,
+    intro_completed: False,
     accepted_crew_help: False,
+    scrap: 0,
+    credits: 0,
+    speed_upgrades: 0,
+    last_scrap_discovery_at: 0.0,
+    last_waystation_at: 0.0,
   ))
 }
 
@@ -187,8 +189,8 @@ The machinist and the navigator step in.",
   let accept_crew_guidance = fn(model: Model) {
     let prompt =
       [
-        "Navigator: No way we'll get this far without a working autopilot system...",
-        "Machinist: Have to tink.",
+        "Navigator: No way we'll get this far without a working autopilot system!",
+        "Machinist: Have to think.",
       ]
       |> linear_dialogue([EndResponse(label: continue_glyph)])
     #(
@@ -213,7 +215,7 @@ The machinist and the navigator step in.",
   let continuation = linear_dialogue(continuation_chain, final_decisions)
 
   linear_dialogue(intro_chain, [
-    PromptResponse(label: "There is no error", prompt: continuation),
+    PromptResponse(label: "There is no error.", prompt: continuation),
     PromptResponse(label: "What's the matter?", prompt: continuation),
   ])
 }
@@ -223,6 +225,7 @@ The machinist and the navigator step in.",
 type Msg {
   UserClickedActionButton(action: Action)
   UserClickedResponseButton(prompt: Prompt, response: Response)
+  AutopilotTick
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
@@ -233,13 +236,24 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     UserClickedResponseButton(prompt, response) -> {
       handle_response(prompt, response, model)
     }
+    AutopilotTick -> {
+      case model.autopilot_enabled {
+        True -> #(simulate(model, 1), trigger_autopilot_effect())
+        _ -> set_state(model)
+      }
+    }
   }
 }
 
 fn handle_action(action: Action, model: Model) -> #(Model, effect.Effect(Msg)) {
   case action {
     PilotShipAction -> simulate(model, 1) |> set_state()
-    DisableAutoPilotAction -> todo
+    DisableAutoPilotAction ->
+      set_state(Model(..model, autopilot_enabled: False))
+    EnableAutoPilotAction -> #(
+      Model(..model, autopilot_enabled: True),
+      trigger_autopilot_effect(),
+    )
   }
 }
 
@@ -255,7 +269,8 @@ fn handle_response(
     ActionResponse(label: label, perform:) ->
       Model(..model, message_log: ["«" <> label <> "»", ..model.message_log])
       |> perform()
-    EndResponse(label: _) -> set_state(Model(..model, message_log: []))
+    EndResponse(label: _) ->
+      set_state(Model(..model, message_log: [], intro_completed: True))
     ContinueResponse(label: _, prompt:) ->
       set_state(Model(..model, prompt: Some(prompt)))
     PromptResponse(label:, prompt:) ->
@@ -277,7 +292,7 @@ fn simulate(model: Model, hours: Int) -> Model {
     let remaining_hours = total_hours % 24
     #(model.day + additional_days, remaining_hours)
   }
-  // Movemen
+  // Movement
   let distance_to_move = model.speed *. int.to_float(hours)
   let position =
     util.move_towards(model.position, lucy.position, distance_to_move)
@@ -294,17 +309,39 @@ fn available_actions(model: Model) -> List(Action) {
       True -> Some(DisableAutoPilotAction)
       False -> Some(PilotShipAction)
     },
+    case model.autopilot_available && !model.autopilot_enabled {
+      True -> Some(EnableAutoPilotAction)
+      False -> None
+    },
   ]
   |> option.values()
 }
 
 fn view_status(model: Model) {
-  html.text("You have the deck, all systems are running normally")
+  case model {
+    Model(autopilot_enabled: True, ..) -> {
+      html.text("The autopilot system is engaged.")
+    }
+    _ -> {
+      html.text("You have the controls, all systems are running normally.")
+    }
+  }
+}
+
+fn trigger_autopilot_effect() -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    util.set_timeout(fn() { dispatch(AutopilotTick) }, 1000)
+    Nil
+  })
 }
 
 // VIEW ------------------------------------------------------------------------
 
 fn view(model: Model) -> Element(Msg) {
+  let hidden_for_intro_class = case model.intro_completed {
+    True -> attribute.class("hidden-for-intro")
+    False -> attribute.class("hidden-for-intro hidden")
+  }
   html.div(
     [
       attribute.id("root"),
@@ -312,7 +349,7 @@ fn view(model: Model) -> Element(Msg) {
       attribute.style("--text", theme.text),
     ],
     [
-      html.div([attribute.class("top-bar")], [
+      html.div([attribute.class("top-bar"), hidden_for_intro_class], [
         html.div([attribute.class("speed-indicator")], [
           html.text("Ship Speed: " <> util.format_speed_long(model.speed)),
         ]),
@@ -333,17 +370,23 @@ fn view(model: Model) -> Element(Msg) {
         ]),
       ]),
       html.div([attribute.class("game-panel")], [
-        html.div(
-          [attribute.class("message-log")],
-          list.reverse(model.message_log)
-            |> list.map(view_message),
-        ),
-        {
-          case model.prompt {
-            Some(prompt) -> view_prompt(prompt)
-            None -> view_actions(model)
-          }
-        },
+        html.div([attribute.class("interaction-box")], [
+          html.div(
+            [attribute.class("message-log")],
+            list.reverse(model.message_log)
+              |> list.map(view_message),
+          ),
+          {
+            case model.prompt {
+              Some(prompt) -> view_prompt(prompt)
+              None -> view_actions(model)
+            }
+          },
+        ]),
+        html.div([attribute.class("data-box"), hidden_for_intro_class], [
+          // TODO
+        // html.text("TODO: Data goes here"),
+        ]),
       ]),
 
       html.div(
@@ -397,6 +440,12 @@ fn view_action(a: Action) {
         a,
         "Disable Autopilot",
         "Disengage the autopilot system (The ship will stop moving by itself)",
+      )
+    EnableAutoPilotAction ->
+      view_action_button(
+        a,
+        "Enable Autopilot",
+        "Engage the autopilot system (The ship will start moving by itself)",
       )
   }
 }

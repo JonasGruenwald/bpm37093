@@ -73,25 +73,10 @@ pub const two_pi = 6.283185307179586
 
 pub const lightyear_in_km = 9_460_730_472_580.8
 
-// pub fn format_distance_long(light_years: Float) -> String {
-//   let whole = float.round(light_years)
-//   let assert Ok(remainder) = float.modulo(light_years, 1.0)
-//   let remainder_km = { lightyear_in_km *. remainder } |> float.round
-//   case whole {
-//     0 -> int.to_string(remainder_km) <> " kilometres"
-//     _ -> {
-//       int.to_string(whole)
-//       <> " light years and "
-//       <> int.to_string(remainder_km)
-//       <> " kilometres"
-//     }
-//   }
-// }
-
 const lightyear_precision = 5
 
 pub fn format_distance_long(light_years: Float) -> String {
-   case light_years {
+  case light_years {
     _ if light_years <. 1.0 -> {
       { light_years *. lightyear_in_km } |> float.round |> int.to_string()
       <> " kilometres"
@@ -115,3 +100,6 @@ pub fn format_speed_long(light_years: Float) -> String {
     }
   }
 }
+
+@external(javascript, "./util_ffi.mjs", "setTimeout")
+pub fn set_timeout(callback: fn() -> anything, delay: Int) -> Int
