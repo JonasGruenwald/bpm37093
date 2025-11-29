@@ -110,7 +110,6 @@ fn update(model: Model, event: Event) -> Model {
       )
     }
     canvas.MouseMoved(x, y) -> {
-      echo "Mouse has moved"
       Model(..model, mouse: Vec2(x, y))
     }
     _ -> model

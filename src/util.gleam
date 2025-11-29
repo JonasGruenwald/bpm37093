@@ -103,3 +103,6 @@ pub fn format_speed_long(light_years: Float) -> String {
 
 @external(javascript, "./util_ffi.mjs", "setTimeout")
 pub fn set_timeout(callback: fn() -> anything, delay: Int) -> Int
+
+@external(javascript, "./util_ffi.mjs", "clearTimeout")
+pub fn clear_timeout(id: Int) -> Nil

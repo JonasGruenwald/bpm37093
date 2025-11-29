@@ -171,8 +171,15 @@ button:active,
   z-index: -1;
 }
 
+button.buy{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .message {
   margin-bottom: var(--default-margin);
+  white-space: pre-line;
 }
 
 .actions-container {

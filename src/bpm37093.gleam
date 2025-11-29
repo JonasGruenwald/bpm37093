@@ -15,6 +15,7 @@ import lustre/effect
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
+import random
 import space
 import space_data.{lucy, sol, stars}
 import space_diorama
@@ -25,9 +26,17 @@ import vec/vec3f
 
 // CONSTANTS -------------------------------------------------------------------
 
-const seconds_in_an_hour = 3600
-
 const hours_in_a_year = 8760
+
+const scrap_bundle_size = 10
+
+const autopilot_price = 190
+
+const scrap_magnet_price = 500
+
+const scrap_drone_price = 1000
+
+const cryochambers_price = 10_000
 
 const continue_glyph = "→"
 
@@ -82,6 +91,10 @@ type Response {
   EndResponse(label: String)
 }
 
+type Waystation {
+  Waystation(name: String, scrap_price: Int)
+}
+
 type Model {
   Model(
     // Day of progression, starting at 1
@@ -95,14 +108,23 @@ type Model {
     // Distance traveled in lightyears
     distance_traveled: Float,
     distance_to_lucy: Float,
+    // Encounters & dialogue
     prompt: Option(Prompt),
     // Log of past messages from prompts IN REVERSE
     message_log: List(Message),
+    // Station docking
+    waystation: Option(Waystation),
     // Flags
-    autopilot_available: Bool,
-    autopilot_enabled: Bool,
     intro_completed: Bool,
     accepted_crew_help: Bool,
+    // Upgrades
+    autopilot_available: Bool,
+    autopilot_enabled: Bool,
+    autopilot_timeout_id: Int,
+    scrap_magnet: Bool,
+    scrap_drone: Bool,
+    cryosleep_available: Bool,
+    cryosleep_enabled: Bool,
     // Resources
     scrap: Int,
     credits: Int,
@@ -157,26 +179,33 @@ fn init(_) -> #(Model, effect.Effect(a)) {
     position: sol.position,
     distance_traveled: 0.0,
     distance_to_lucy: vec3f.distance(sol.position, lucy.position),
-    prompt: Some(create_initro_dialogue()),
+    prompt: None,
+    intro_completed: True,
     message_log: [],
-    autopilot_available: True,
-    autopilot_enabled: False,
-    intro_completed: False,
+    waystation: None,
     accepted_crew_help: False,
+    autopilot_available: False,
+    autopilot_enabled: False,
+    autopilot_timeout_id: 0,
+    scrap_magnet: False,
+    scrap_drone: False,
+    cryosleep_available: False,
+    cryosleep_enabled: False,
     scrap: 0,
     credits: 0,
     speed_upgrades: 0,
     last_scrap_discovery_at: 0.0,
     last_waystation_at: 0.0,
-  ))
+  ) |> trigger_intro(),
+  )
 }
 
-fn create_initro_dialogue() -> Prompt {
+fn trigger_intro(model) -> Model {
   let intro_chain = [
     "You are standing on the bridge of the craft.
-The room is illuminated only by the blue hue of the control panels.",
+  The room is illuminated only by the blue hue of the control panels.",
     "With a quiet hiss, the door opens.
-The machinist and the navigator step in.",
+  The machinist and the navigator step in.",
     "The navigator looks concerned, the machinist's face is unreadable.",
     "Navigator: I think there must be some kind of error with the coordinates you gave us?",
   ]
@@ -190,7 +219,7 @@ The machinist and the navigator step in.",
     let prompt =
       [
         "Navigator: No way we'll get this far without a working autopilot system!",
-        "Machinist: Have to think.",
+        "Machinist: Need make ship faster.",
       ]
       |> linear_dialogue([EndResponse(label: continue_glyph)])
     #(
@@ -214,10 +243,19 @@ The machinist and the navigator step in.",
 
   let continuation = linear_dialogue(continuation_chain, final_decisions)
 
-  linear_dialogue(intro_chain, [
-    PromptResponse(label: "There is no error.", prompt: continuation),
-    PromptResponse(label: "What's the matter?", prompt: continuation),
-  ])
+  let intro_prompt =
+    linear_dialogue(intro_chain, [
+      PromptResponse(label: "There is no error.", prompt: continuation),
+      PromptResponse(label: "What's the matter?", prompt: continuation),
+    ])
+
+  Model(..model, prompt: Some(intro_prompt), intro_completed: False)
+}
+
+fn disable_autopilot(model: Model) -> Model {
+  // This should really be an effect but I'm lazy
+  util.clear_timeout(model.autopilot_timeout_id)
+  Model(..model, autopilot_enabled: False, autopilot_timeout_id: 0)
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -225,6 +263,14 @@ The machinist and the navigator step in.",
 type Msg {
   UserClickedActionButton(action: Action)
   UserClickedResponseButton(prompt: Prompt, response: Response)
+  UserClickedSellScrapAction(price: Int)
+  UserClickedSellAllScrapAction(price: Int)
+  UserClickedBuyAutopilotAction
+  UserClickedBuyMagnetAction
+  UserClickedBuyDroneAction
+  UserClickedBuyCryochambersAction
+  UserClickedLeaveStationAction
+  AutopilotTimeoutScheduled(id: Int)
   AutopilotTick
 }
 
@@ -235,6 +281,64 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     }
     UserClickedResponseButton(prompt, response) -> {
       handle_response(prompt, response, model)
+    }
+    UserClickedSellScrapAction(price) -> {
+      Model(
+        ..model,
+        scrap: model.scrap - scrap_bundle_size,
+        credits: model.credits + price,
+      )
+      |> set_state
+    }
+    UserClickedSellAllScrapAction(price) -> {
+      let bundles = model.scrap / scrap_bundle_size
+      let scrap_sold = bundles * scrap_bundle_size
+      let credits_received = bundles * price
+      Model(
+        ..model,
+        scrap: model.scrap - scrap_sold,
+        credits: model.credits + credits_received,
+      )
+      |> set_state()
+    }
+    UserClickedBuyAutopilotAction -> {
+      Model(
+        ..model,
+        credits: model.credits - autopilot_price,
+        autopilot_available: True,
+      )
+      |> set_state
+    }
+    UserClickedBuyMagnetAction -> {
+      Model(
+        ..model,
+        credits: model.credits - scrap_magnet_price,
+        scrap_magnet: True,
+      )
+      |> set_state
+    }
+    UserClickedBuyCryochambersAction -> {
+      Model(
+        ..model,
+        credits: model.credits - cryochambers_price,
+        cryosleep_available: True,
+      )
+      |> set_state
+    }
+    UserClickedBuyDroneAction -> {
+      Model(
+        ..model,
+        credits: model.credits - scrap_drone_price,
+        scrap_drone: True,
+      )
+      |> set_state
+    }
+    UserClickedLeaveStationAction -> {
+      Model(..model, waystation: None)
+      |> set_state()
+    }
+    AutopilotTimeoutScheduled(id) -> {
+      set_state(Model(..model, autopilot_timeout_id: id))
     }
     AutopilotTick -> {
       case model.autopilot_enabled {
@@ -248,8 +352,10 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
 fn handle_action(action: Action, model: Model) -> #(Model, effect.Effect(Msg)) {
   case action {
     PilotShipAction -> simulate(model, 1) |> set_state()
-    DisableAutoPilotAction ->
-      set_state(Model(..model, autopilot_enabled: False))
+    DisableAutoPilotAction -> {
+      disable_autopilot(model)
+      |> set_state()
+    }
     EnableAutoPilotAction -> #(
       Model(..model, autopilot_enabled: True),
       trigger_autopilot_effect(),
@@ -284,22 +390,175 @@ fn handle_response(
   }
 }
 
+fn pass_time(model: Model, hours: Int) {
+  let total_hours = model.hour + hours
+  let additional_days = total_hours / 24
+  let remaining_hours = total_hours % 24
+  #(model.day + additional_days, remaining_hours)
+}
+
 fn simulate(model: Model, hours: Int) -> Model {
   // Time progression
-  let #(day, hour) = {
-    let total_hours = model.hour + hours
-    let additional_days = total_hours / 24
-    let remaining_hours = total_hours % 24
-    #(model.day + additional_days, remaining_hours)
-  }
+  let #(day, hour) = pass_time(model, hours)
   // Movement
   let distance_to_move = model.speed *. int.to_float(hours)
   let position =
     util.move_towards(model.position, lucy.position, distance_to_move)
   let distance_traveled = model.distance_traveled +. distance_to_move
   let distance_to_lucy = vec3f.distance(position, lucy.position)
+  // Ambient scrap collection
+  let scrap = case model.scrap_magnet {
+    True -> model.scrap + hours
+    False -> model.scrap
+  }
 
-  Model(..model, day:, hour:, position:, distance_traveled:, distance_to_lucy:)
+  let new_model =
+    Model(
+      ..model,
+      day:,
+      hour:,
+      position:,
+      distance_traveled:,
+      distance_to_lucy:,
+      scrap:,
+    )
+    |> evaluate_encounters()
+  console.log_3("[Simulation]", hours, model)
+  new_model
+}
+
+const scrap_base_steps = 20.0
+
+const station_base_steps = 60.0
+
+fn evaluate_encounters(model: Model) -> Model {
+  let steps_since_last_waystation =
+    { model.distance_traveled -. model.last_waystation_at } /. model.speed
+  let steps_since_last_scrap =
+    { model.distance_traveled -. model.last_scrap_discovery_at } /. model.speed
+
+  let percentage_roll = int.random(100)
+
+  case steps_since_last_waystation >=. station_base_steps {
+    True if percentage_roll > 90 -> {
+      trigger_waystation_encounter(model)
+    }
+    _ -> {
+      case steps_since_last_scrap >=. scrap_base_steps {
+        True if percentage_roll > 50 -> {
+          trigger_scrap_encounter(model)
+        }
+        _ -> model
+      }
+    }
+  }
+}
+
+fn trigger_waystation_encounter(model: Model) -> Model {
+  let station_name = random.waystation_name()
+  let scrap_price = int.random(5) + 5
+
+  let prompt =
+    Prompt(
+      message: "You are passing by the waystation "
+        <> station_name
+        <> ".\n\n"
+        <> "This station will buy scrap in bundles of "
+        <> int.to_string(scrap_bundle_size)
+        <> " for "
+        <> int.to_string(scrap_price)
+        <> " credits.\n"
+        <> "You can purchase devices or upgrade your ship here.",
+      responses: [
+        ActionResponse(label: "Dock at waystation", perform: fn(model) {
+          Model(
+            ..model,
+            message_log: [],
+            prompt: None,
+            waystation: Some(Waystation(
+              name: station_name,
+              scrap_price: scrap_price,
+            )),
+          )
+          |> set_state
+        }),
+        EndResponse("Ignore Station"),
+      ],
+    )
+
+  Model(
+    ..model,
+    prompt: Some(prompt),
+    last_waystation_at: model.distance_traveled,
+  )
+  |> disable_autopilot()
+}
+
+fn trigger_scrap_encounter(model: Model) -> Model {
+  let ship_name = random.ship_name()
+  let duration = int.random(12) + 2
+  let yield = int.random(150) + 1
+  let age = int.random(100 + 2) |> int.to_string()
+
+  let prompt =
+    Prompt(
+      message: "Alerts blare in the control room, the scanners have detected the nearby wreck of a space craft.\n\n"
+        <> "The ruined hull of the "
+        <> ship_name
+        <> " has been drifting through space for "
+        <> age
+        <> " years. It is eligible for scrap collection by galactic law.\n"
+        <> "Recovering scrap from this vessel would take around "
+        <> int.to_string(duration)
+        <> " hours.",
+      responses: [
+        ActionResponse(label: "Collect Scrap", perform: fn(model) {
+          let #(day, hour) = pass_time(model, duration)
+          Model(
+            ..model,
+            day:,
+            hour:,
+            scrap: model.scrap + yield,
+            prompt: Some(
+              Prompt(
+                message: "After "
+                  <> int.to_string(duration)
+                  <> " hours of work, you have recovered a total of "
+                  <> int.to_string(yield)
+                  <> " pieces of scrap.",
+                responses: [EndResponse(label: continue_glyph)],
+              ),
+            ),
+          )
+          |> set_state()
+        }),
+        EndResponse(label: "Ignore Wreck"),
+      ],
+    )
+
+  case model.scrap_drone {
+    True -> {
+      Model(
+        ..model,
+        last_scrap_discovery_at: model.distance_traveled,
+        scrap: model.scrap + yield,
+        message_log: [
+          "Scrap harvester drone collected "
+          <> int.to_string(yield)
+          <> " scrap from the wreck of "
+          <> ship_name,
+        ],
+      )
+    }
+    False -> {
+      Model(
+        ..model,
+        last_scrap_discovery_at: model.distance_traveled,
+        prompt: Some(prompt),
+      )
+      |> disable_autopilot()
+    }
+  }
 }
 
 /// These actions are always available to the player, when there is no active prompt
@@ -330,7 +589,8 @@ fn view_status(model: Model) {
 
 fn trigger_autopilot_effect() -> effect.Effect(Msg) {
   effect.from(fn(dispatch) {
-    util.set_timeout(fn() { dispatch(AutopilotTick) }, 1000)
+    let id = util.set_timeout(fn() { dispatch(AutopilotTick) }, 1000)
+    dispatch(AutopilotTimeoutScheduled(id))
     Nil
   })
 }
@@ -377,15 +637,17 @@ fn view(model: Model) -> Element(Msg) {
               |> list.map(view_message),
           ),
           {
-            case model.prompt {
-              Some(prompt) -> view_prompt(prompt)
-              None -> view_actions(model)
+            case model {
+              Model(prompt: Some(prompt), ..) -> view_prompt(prompt)
+              Model(waystation: Some(station), ..) ->
+                view_station(model, station)
+              _ -> view_actions(model)
             }
           },
         ]),
         html.div([attribute.class("data-box"), hidden_for_intro_class], [
-          // TODO
-        // html.text("TODO: Data goes here"),
+          view_data_point("Scrap", model.scrap),
+          view_data_point("Credits", model.credits),
         ]),
       ]),
 
@@ -413,6 +675,69 @@ fn view_prompt(prompt: Prompt) {
         )
       }),
     ),
+  ])
+}
+
+fn view_station(model: Model, station: Waystation) {
+  html.div([attribute.class("prompt")], [
+    html.div([attribute.class("prompt-content")], [
+      view_message(
+        "You are docked at the "
+        <> station.name
+        <> " station.\n\n"
+        <> "At this station, you can sell "
+        <> int.to_string(scrap_bundle_size)
+        <> " pieces of scrap for "
+        <> int.to_string(station.scrap_price)
+        <> " credits.\n"
+        <> "",
+      ),
+    ]),
+    html.div([attribute.class("actions-container")], [
+      view_sell_button(
+        "Sell " <> int.to_string(scrap_bundle_size) <> " scrap",
+        model.scrap,
+        UserClickedSellScrapAction(station.scrap_price),
+      ),
+      view_sell_button(
+        "Sell all scrap",
+        model.scrap,
+        UserClickedSellAllScrapAction(station.scrap_price),
+      ),
+      view_buy_button(
+        "Autopilot System",
+        UserClickedBuyAutopilotAction,
+        model.autopilot_available,
+        autopilot_price,
+        model.credits,
+        "Allows the vessel to fly on its own without the need for a pilot on the controls",
+      ),
+      view_buy_button(
+        "Scrap Collection Magnet",
+        UserClickedBuyMagnetAction,
+        model.scrap_magnet,
+        scrap_magnet_price,
+        model.credits,
+        "Automatically collects small pieces of scrap during flight",
+      ),
+      view_buy_button(
+        "Scrap Harvester Drone",
+        UserClickedBuyDroneAction,
+        model.scrap_drone,
+        scrap_drone_price,
+        model.credits,
+        "Automatically harvests the scrap of nearby shipwrecks",
+      ),
+      view_buy_button(
+        "Cryochambers",
+        UserClickedBuyCryochambersAction,
+        model.cryosleep_available,
+        cryochambers_price,
+        model.credits,
+        "Allows you to pass time significantly faster when using the autopilot system",
+      ),
+      view_button(UserClickedLeaveStationAction, "Leave Station"),
+    ]),
   ])
 }
 
@@ -454,8 +779,80 @@ fn view_message(message: Message) {
   html.div([attribute.class("message")], [html.text(message)])
 }
 
-fn view_action_button(action: Action, title: String, _tooltip: String) {
-  view_button(UserClickedActionButton(action), title)
+fn view_data_point(label: String, value: Int) {
+  case value > 0 {
+    True ->
+      html.div([attribute.class("data-point")], [
+        html.span([], [html.text(label <> ": ")]),
+        html.span([], [html.text(int.to_string(value))]),
+      ])
+    False -> element.none()
+  }
+}
+
+fn view_action_button(action: Action, title: String, tooltip: String) {
+  html.button(
+    [event.on_click(UserClickedActionButton(action)), attribute.title(tooltip)],
+    [
+      html.text(title),
+    ],
+  )
+}
+
+fn view_buy_button(
+  title: String,
+  message: Msg,
+  already_bought: Bool,
+  price: Int,
+  available_credits: Int,
+  tooltip: String,
+) -> Element(Msg) {
+  case already_bought {
+    True -> element.none()
+    False -> {
+      let content = [
+        html.span([], [html.text("Buy " <> title)]),
+        html.span([], [html.text(int.to_string(price) <> " Credits")]),
+      ]
+      case available_credits >= price {
+        True -> {
+          html.button(
+            [
+              event.on_click(message),
+              attribute.title(tooltip),
+              attribute.class("buy"),
+            ],
+            content,
+          )
+        }
+        False -> {
+          html.button(
+            [
+              attribute.disabled(True),
+              attribute.title(tooltip),
+              attribute.class("buy"),
+            ],
+            content,
+          )
+        }
+      }
+    }
+  }
+}
+
+fn view_sell_button(
+  title: String,
+  available_scrap: Int,
+  message: Msg,
+) -> Element(Msg) {
+  html.button(
+    [
+      event.on_click(message),
+      attribute.disabled(available_scrap < scrap_bundle_size),
+      attribute.class("sell"),
+    ],
+    [html.text(title)],
+  )
 }
 
 fn view_button(on_click handle_click: msg, label text: String) -> Element(msg) {
