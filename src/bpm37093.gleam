@@ -199,7 +199,7 @@ fn init(_) -> #(Model, effect.Effect(a)) {
       cryosleep_available: False,
       cryosleep_enabled: False,
       scrap: 0,
-      credits: 9999999999999,
+      credits: 0,
       speed_upgrades: 0,
       last_scrap_discovery_at: 0.0,
       last_waystation_at: 0.0,

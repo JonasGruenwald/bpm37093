@@ -16,4 +16,4 @@ pub const diorama_lucy_tether = "#a571a5ff"
 
 pub const diorama_sol = "#ffff00"
 
-pub const diorama_player = "#ff0000"
+pub const diorama_player = "#8d0000ff"
