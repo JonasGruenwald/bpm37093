@@ -890,7 +890,7 @@ fn view_station(model: Model, station: Waystation) {
         model.speed_upgrades >= max_upgrades,
         speed_upgrade_cost(model),
         model.credits,
-        "Allows you to pass time significantly faster when using the autopilot system",
+        "Doubles the speed of the ships engine systems",
       ),
       view_button(UserClickedLeaveStationAction, "Leave Station"),
     ]),
