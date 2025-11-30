@@ -13,14 +13,14 @@ const waystation_nouns = [
   "Cartagena", "Charleston", "Chiba", "Copenhagen", "Danzig", "Dover", "Dubai",
   "Dublin", "Durban", "Genoa", "Glasgow", "Guangzhou", "Hamburg", "Havana",
   "Helsinki", "Hong Kong", "Houston", "Istanbul", "Jakarta", "Karachi", "Kobe",
-  "Lagos", "Lisbon", "Liverpool", "London", "Los Angeles", "Marseille",
-  "Melbourne", "Miami", "Mombasa", "Montreal", "Mumbai", "Nagasaki", "Naples",
-  "New Orleans", "New York", "Newcastle", "Odessa", "Osaka", "Oslo", "Panama",
-  "Perth", "Philadelphia", "Plymouth", "Said", "Portland", "Portsmouth", "Riga",
-  "Rio", "Rotterdam", "Diego", "San Francisco", "Santos", "Seattle", "Shanghai",
-  "Singapore", "Southampton", "Stockholm", "Sydney", "Tangier", "Tokyo",
-  "Toronto", "Trieste", "Valencia", "Vancouver", "Venice", "Vladivostok",
-  "Wellington", "Yokohama", "Zanzibar",
+  "Lagos", "Leningrad", "Lisbon", "Liverpool", "London", "Los Angeles",
+  "Marseille", "Melbourne", "Miami", "Mombasa", "Montreal", "Mumbai", "Nagasaki",
+  "Naples", "New Orleans", "New York", "Newcastle", "Odessa", "Osaka", "Oslo",
+  "Panama", "Perth", "Philadelphia", "Plymouth", "Said", "Portland",
+  "Portsmouth", "Riga", "Rio", "Rotterdam", "Diego", "San Francisco", "Santos",
+  "Seattle", "Shanghai", "Singapore", "Southampton", "Stockholm", "Sydney",
+  "Tangier", "Tokyo", "Toronto", "Trieste", "Valencia", "Vancouver", "Venice",
+  "Vladivostok", "Wellington", "Yokohama", "Zanzibar",
 ]
 
 const waystation_adjectives = [
@@ -52,7 +52,7 @@ const ship_nouns = [
   "Leviathan", "Kraken", "Dawn", "Dusk", "Eclipse", "Aurora", "Nebula", "Nova",
   "Comet", "Meteor", "Pulsar", "Quasar", "Beacon", "Ember", "Odyssey", "Venture",
   "Endeavor", "Discovery", "Fortune", "Destiny", "Legacy", "Genesis", "Exodus",
-  "Prometheus", "Icarus", "Atlas",
+  "Prometheus", "Icarus", "Atlas", "Cutlass", "Corsair", "Balinger"
 ]
 
 const ship_adjectives = [

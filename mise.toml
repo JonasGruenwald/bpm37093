@@ -13,5 +13,14 @@ run = [
 [tasks.dev]
 run = "gleam run -m lustre/dev start"
 
+[tasks.build]
+run = "gleam run -m lustre/dev build"
+
+[tasks.deploy]
+run = [
+  "gleam run -m lustre/dev build",
+  "bunx wrangler pages deploy dist --project-name=lucy",
+]
+
 [tasks.test]
 run = "gleam test"

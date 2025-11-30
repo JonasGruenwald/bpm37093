@@ -17,8 +17,7 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
 import random
-import space
-import space_data.{lucy, sol, stars}
+import space_data.{lucy, sol}
 import space_diorama
 import theme
 import util
@@ -120,7 +119,7 @@ type Model {
     // Station docking
     waystation: Option(Waystation),
     // Flags
-    intro_completed: Bool,
+    hide_interface: Bool,
     accepted_crew_help: Bool,
     // Upgrades
     autopilot_available: Bool,
@@ -137,6 +136,8 @@ type Model {
     // Checkpoints (at points of distance_traveled)
     last_waystation_at: Float,
     last_scrap_discovery_at: Float,
+    // The end
+    destination_reached: Bool,
   )
 }
 
@@ -177,32 +178,56 @@ fn linear_dialogue(
 }
 
 fn init(_) -> #(Model, effect.Effect(a)) {
-  set_state(Model(
-    day: 1,
-    hour: 0,
-    speed: get_starting_speed(),
-    position: sol.position,
-    distance_traveled: 0.0,
-    distance_to_lucy: vec3f.distance(sol.position, lucy.position),
-    prompt: None,
-    intro_completed: True,
-    message_log: [],
-    waystation: None,
-    accepted_crew_help: False,
-    autopilot_available: False,
-    autopilot_enabled: False,
-    autopilot_timeout_id: 0,
-    scrap_magnet: False,
-    scrap_drone: False,
-    cryosleep_available: False,
-    cryosleep_enabled: False,
-    scrap: 0,
-    credits: 0,
-    speed_upgrades: 0,
-    last_scrap_discovery_at: 0.0,
-    last_waystation_at: 0.0,
-  ) |> trigger_intro(),
+  set_state(
+    Model(
+      day: 1,
+      hour: 0,
+      speed: get_starting_speed(),
+      position: sol.position,
+      distance_traveled: 0.0,
+      distance_to_lucy: vec3f.distance(sol.position, lucy.position),
+      prompt: None,
+      hide_interface: False,
+      message_log: [],
+      waystation: None,
+      accepted_crew_help: False,
+      autopilot_available: False,
+      autopilot_enabled: False,
+      autopilot_timeout_id: 0,
+      scrap_magnet: False,
+      scrap_drone: False,
+      cryosleep_available: False,
+      cryosleep_enabled: False,
+      scrap: 0,
+      credits: 9999999999999,
+      speed_upgrades: 0,
+      last_scrap_discovery_at: 0.0,
+      last_waystation_at: 0.0,
+      destination_reached: False,
+    )
+    |> trigger_prelude(),
   )
+}
+
+fn trigger_prelude(model) -> Model {
+  let prelude_chain = [
+    "The largest diamond in the known universe is not a single gem,\n but a white dwarf star.",
+    "Located about 50 light-years from earth, her interior is a giant crystal of carbon,\n with a mass of approximately 10 billion trillion trillion carats.",
+    "Roughly the size of the Moon, she shines brightly as she cools and crystallises.",
+    "BPM 37093.",
+    "Lucy.",
+  ]
+
+  let prelude_prompt =
+    linear_dialogue(prelude_chain, [
+      ActionResponse(label: "Begin your journey", perform: fn(model) {
+        Model(..model, message_log: [])
+        |> trigger_intro()
+        |> set_state()
+      }),
+    ])
+
+  Model(..model, prompt: Some(prelude_prompt), hide_interface: True)
 }
 
 fn trigger_intro(model) -> Model {
@@ -216,7 +241,7 @@ fn trigger_intro(model) -> Model {
   ]
 
   let continuation_chain = [
-    "Navigator: 12 hours 38 minutes 49.78112 seconds right ascension, -49 degrees 48 minutes 0.2195 seconds declination? That's almost fifty light years from sol!",
+    "Navigator: 12 hours 38 minutes 49.78112 seconds right ascension, -49 degrees 48 minutes 0.2195 seconds declination\n? That's over forty-eight light years from sol!",
     "Machinist: This scrap collection vessel. Not equipped for FTL travel. Won't even reach light speed with current config. Die of old age before we arrive.",
   ]
 
@@ -254,7 +279,29 @@ fn trigger_intro(model) -> Model {
       PromptResponse(label: "What's the matter?", prompt: continuation),
     ])
 
-  Model(..model, prompt: Some(intro_prompt), intro_completed: False)
+  Model(..model, prompt: Some(intro_prompt), hide_interface: True)
+}
+
+fn trigger_end(model: Model) -> Model {
+  let outro_chain = [
+    "You have traveled for "
+      <> int.to_string(model.day)
+      <> " days, over a distance of "
+      <> util.format_distance_long(model.distance_traveled)
+      <> " to reach this point.",
+    "Unlike any other stars you've seen, she doesn't shine with a constant bright light,\n but instead appears to pulsate, casting an array of strange shadows behind you into the control room.",
+    "As the crafts engines turn off one by one, you begin to notice a sound that doesn't seem to come from any of the ships systems.",
+    "A low humming tone, seemingly varying with the pulsing of the white dwarfs light.",
+    "She is singing.",
+    "As you sit down on the floor of the vessel, looking up at Lucy, you somehow feel like the sands of the bottom of an hourglass",
+    "\n",
+  ]
+
+  // TODO time to turn it over then
+
+  Model(..model, prompt: Some(linear_dialogue(outro_chain, [
+
+  ])))
 }
 
 fn disable_autopilot(model: Model) -> Model {
@@ -409,7 +456,7 @@ fn handle_response(
       Model(..model, message_log: ["«" <> label <> "»", ..model.message_log])
       |> perform()
     EndResponse(label: _) ->
-      set_state(Model(..model, message_log: [], intro_completed: True))
+      set_state(Model(..model, message_log: [], hide_interface: False))
     ContinueResponse(label: _, prompt:) ->
       set_state(Model(..model, prompt: Some(prompt)))
     PromptResponse(label:, prompt:) ->
@@ -435,30 +482,54 @@ fn simulate(model: Model, hours: Int) -> Model {
   let #(day, hour) = pass_time(model, hours)
   // Movement
   let distance_to_move = model.speed *. int.to_float(hours)
-  // TODO fix overshoot!
-  let position =
-    util.move_towards(model.position, lucy.position, distance_to_move)
-  let distance_traveled = model.distance_traveled +. distance_to_move
-  let distance_to_lucy = vec3f.distance(position, lucy.position)
-  // Ambient scrap collection
-  let scrap = case model.scrap_magnet {
-    True -> model.scrap + hours
-    False -> model.scrap
-  }
+  case distance_to_move <. model.distance_to_lucy {
+    // Regular simulation tick
+    True -> {
+      let position =
+        util.move_towards(model.position, lucy.position, distance_to_move)
+      let distance_traveled = model.distance_traveled +. distance_to_move
+      let distance_to_lucy = vec3f.distance(position, lucy.position)
+      // Ambient scrap collection
+      let scrap = case model.scrap_magnet {
+        True -> model.scrap + hours
+        False -> model.scrap
+      }
 
-  let new_model =
-    Model(
-      ..model,
-      day:,
-      hour:,
-      position:,
-      distance_traveled:,
-      distance_to_lucy:,
-      scrap:,
-    )
-    |> evaluate_encounters()
-  console.log_3("[Simulation]", hours, model)
-  new_model
+      let new_model =
+        Model(
+          ..model,
+          day:,
+          hour:,
+          position:,
+          distance_traveled:,
+          distance_to_lucy:,
+          scrap:,
+        )
+        |> evaluate_encounters()
+      console.log_3("[Simulation]", hours, model)
+      new_model
+    }
+    // End of the game
+    False -> {
+      let final_sprint = model.distance_to_lucy
+      let distance_traveled = model.distance_traveled +. final_sprint
+
+      Model(
+        ..model,
+        speed: 0.0,
+        day:,
+        hour:,
+        position: lucy.position,
+        distance_traveled:,
+        distance_to_lucy: 0.0,
+        destination_reached: True,
+        hide_interface: True,
+        message_log: []
+      )
+      |> disable_autopilot()
+      |> trigger_end()
+    }
+  }
 }
 
 const scrap_base_steps = 20.0
@@ -683,9 +754,9 @@ fn trigger_autopilot_effect() -> effect.Effect(Msg) {
 // VIEW ------------------------------------------------------------------------
 
 fn view(model: Model) -> Element(Msg) {
-  let hidden_for_intro_class = case model.intro_completed {
-    True -> attribute.class("hidden-for-intro")
-    False -> attribute.class("hidden-for-intro hidden")
+  let toggle_able_interface = case model.hide_interface {
+    True -> attribute.class("interface hidden")
+    False -> attribute.class("interface")
   }
   html.div(
     [
@@ -694,7 +765,7 @@ fn view(model: Model) -> Element(Msg) {
       attribute.style("--text", theme.text),
     ],
     [
-      html.div([attribute.class("top-bar"), hidden_for_intro_class], [
+      html.div([attribute.class("top-bar"), toggle_able_interface], [
         html.div([attribute.class("speed-indicator")], [
           html.text("Ship Speed: " <> util.format_speed_long(model.speed)),
         ]),
@@ -730,7 +801,7 @@ fn view(model: Model) -> Element(Msg) {
             }
           },
         ]),
-        html.div([attribute.class("data-box"), hidden_for_intro_class], [
+        html.div([attribute.class("data-box"), toggle_able_interface], [
           view_data_point("Scrap", model.scrap),
           view_data_point("Credits", model.credits),
         ]),

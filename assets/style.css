@@ -109,12 +109,12 @@ button:active,
   flex-direction: column;
 }
 
-.hidden-for-intro {
+.interface {
   opacity: 1;
   transition: all 1s;
 }
 
-.hidden-for-intro.hidden {
+.interface.hidden {
   opacity: 0;
 }
 
