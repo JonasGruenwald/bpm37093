@@ -606,7 +606,7 @@ fn trigger_scrap_encounter(model: Model) -> Model {
   let ship_name = random.ship_name()
   let duration = int.random(12) + 2
   let yield = int.random(150) + 1
-  let age = int.random(100 + 2) |> int.to_string()
+  let age = int.random(100) + 2 |> int.to_string()
 
   let prompt =
     Prompt(
