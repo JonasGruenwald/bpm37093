@@ -5,7 +5,6 @@
 import console
 import gleam/float
 import gleam/int
-import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -144,11 +143,6 @@ type Model {
 /// Shorthand for setting the model state without any effects.
 fn set_state(model: Model) -> #(Model, effect.Effect(a)) {
   #(model, effect.none())
-}
-
-/// Shorthand for setting a prompt in the model state.
-fn set_prompt(model: Model, prompt: Prompt) -> #(Model, effect.Effect(a)) {
-  set_state(Model(..model, prompt: Some(prompt)))
 }
 
 fn log_message(model: Model, message: Message) {
@@ -299,9 +293,7 @@ fn trigger_end(model: Model) -> Model {
 
   // TODO time to turn it over then
 
-  Model(..model, prompt: Some(linear_dialogue(outro_chain, [
-
-  ])))
+  Model(..model, prompt: Some(linear_dialogue(outro_chain, [])))
 }
 
 fn disable_autopilot(model: Model) -> Model {
@@ -524,7 +516,7 @@ fn simulate(model: Model, hours: Int) -> Model {
         distance_to_lucy: 0.0,
         destination_reached: True,
         hide_interface: True,
-        message_log: []
+        message_log: [],
       )
       |> disable_autopilot()
       |> trigger_end()

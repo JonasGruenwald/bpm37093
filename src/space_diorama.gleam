@@ -23,8 +23,6 @@ const font_bold = "700 " <> font
 
 const font_light = "300 " <> font
 
-const font_thin = "100 " <> font
-
 const star_min_size = 2.0
 
 const tether_line_width = 1.0
@@ -124,6 +122,7 @@ fn render(model: Model, ctx: Context, width: Float, height: Float) -> Nil {
   draw_rings(ctx, model, width, height)
   draw_stars(ctx, model, width, height)
   draw_lucy(ctx, model, width, height)
+  draw_sol(ctx, model, width, height)
   draw_player(ctx, model, width, height)
 }
 
@@ -219,11 +218,11 @@ fn draw_star(
 
   // console.log(model.mouse)
 
-
   case mouse_dist_squared <=. max_star_name_distance {
     True -> {
       // Draw star name
       canvas.set_font(ctx, font_light)
+      canvas.set_text_align(ctx, "start")
       canvas.set_fill_style(ctx, theme.diorama_star_text)
       canvas.fill_text(ctx, star.name, projected.x +. 5.0, projected.y -. 5.0)
     }
@@ -263,6 +262,7 @@ fn draw_lucy(
 
   // Label
   canvas.set_font(ctx, font_bold)
+  canvas.set_text_align(ctx, "start")
   canvas.set_fill_style(ctx, theme.diorama_lucy)
   canvas.fill_text(ctx, "Lucy", projected.x +. 5.0, projected.y -. 5.0)
 }
@@ -288,6 +288,34 @@ fn draw_player(
 
   // Label
   canvas.set_font(ctx, font_bold)
+  canvas.set_text_align(ctx, "start")
   canvas.set_fill_style(ctx, theme.diorama_player)
   canvas.fill_text(ctx, "You", projected.x +. 5.0, projected.y -. 5.0)
+}
+
+fn draw_sol(
+  ctx: Context,
+  model: Model,
+  canvas_width: Float,
+  canvas_height: Float,
+) {
+  case model.player.position.z <. -4.5 {
+    True -> {
+      let projected =
+        project(Vec3(0.0, 0.0, 0.0), model, canvas_width, canvas_height)
+
+      // Icon
+      canvas.set_text_align(ctx, "center")
+      canvas.set_font(ctx, font_bold)
+      canvas.set_fill_style(ctx, theme.diorama_player)
+      canvas.fill_text(ctx, "☼", projected.x, projected.y +. 5.0)
+
+      // Label
+      canvas.set_text_align(ctx, "start")
+      canvas.set_font(ctx, font_bold)
+      canvas.set_fill_style(ctx, theme.diorama_player)
+      canvas.fill_text(ctx, "Sol", projected.x +. 5.0, projected.y -. 5.0)
+    }
+    False -> Nil
+  }
 }
