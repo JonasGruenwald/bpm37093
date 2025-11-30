@@ -235,7 +235,7 @@ fn trigger_intro(model) -> Model {
   ]
 
   let continuation_chain = [
-    "Navigator: 12 hours 38 minutes 49.78112 seconds right ascension, -49 degrees 48 minutes 0.2195 seconds declination\n? That's over forty-eight light years from sol!",
+    "Navigator: 12 hours 38 minutes 49.78112 seconds right ascension, -49 degrees 48 minutes 0.2195 seconds declination?\n That's over forty-eight light years from sol!",
     "Machinist: This scrap collection vessel. Not equipped for FTL travel. Won't even reach light speed with current config. Die of old age before we arrive.",
   ]
 
