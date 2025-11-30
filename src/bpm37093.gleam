@@ -8,6 +8,7 @@ import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/string
 import lustre
 import lustre/attribute
@@ -26,8 +27,6 @@ import vec/vec3f
 
 // CONSTANTS -------------------------------------------------------------------
 
-const hours_in_a_year = 8760
-
 const scrap_bundle_size = 10
 
 const autopilot_price = 190
@@ -40,9 +39,13 @@ const cryochambers_price = 10_000
 
 const continue_glyph = "→"
 
+const upgrade_base_cost = 200
+
+const max_upgrades = 10
+
 fn get_starting_speed() -> Float {
   // 25% the speed of light (in lightyears per hour)
-  { 1.0 /. int.to_float(hours_in_a_year) } *. 0.25
+  util.light_speed *. 0.25
 }
 
 // MAIN ------------------------------------------------------------------------
@@ -67,6 +70,8 @@ type Action {
   PilotShipAction
   DisableAutoPilotAction
   EnableAutoPilotAction
+  EnterCryosleepAction
+  LeaveCryosleepAction
 }
 
 /// Used to represent encounters and dialogue
@@ -255,7 +260,12 @@ fn trigger_intro(model) -> Model {
 fn disable_autopilot(model: Model) -> Model {
   // This should really be an effect but I'm lazy
   util.clear_timeout(model.autopilot_timeout_id)
-  Model(..model, autopilot_enabled: False, autopilot_timeout_id: 0)
+  Model(
+    ..model,
+    autopilot_enabled: False,
+    cryosleep_enabled: False,
+    autopilot_timeout_id: 0,
+  )
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -269,6 +279,7 @@ type Msg {
   UserClickedBuyMagnetAction
   UserClickedBuyDroneAction
   UserClickedBuyCryochambersAction
+  UserClickedBuySpeedUpgradeAction
   UserClickedLeaveStationAction
   AutopilotTimeoutScheduled(id: Int)
   AutopilotTick
@@ -333,6 +344,15 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       )
       |> set_state
     }
+    UserClickedBuySpeedUpgradeAction -> {
+      Model(
+        ..model,
+        credits: model.credits - speed_upgrade_cost(model),
+        speed: model.speed *. 2.0,
+        speed_upgrades: model.speed_upgrades + 1,
+      )
+      |> set_state()
+    }
     UserClickedLeaveStationAction -> {
       Model(..model, waystation: None)
       |> set_state()
@@ -342,7 +362,13 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     }
     AutopilotTick -> {
       case model.autopilot_enabled {
-        True -> #(simulate(model, 1), trigger_autopilot_effect())
+        True -> {
+          let ticks = case model.cryosleep_enabled {
+            True -> 24
+            False -> 1
+          }
+          #(simulate(model, ticks), trigger_autopilot_effect())
+        }
         _ -> set_state(model)
       }
     }
@@ -360,6 +386,13 @@ fn handle_action(action: Action, model: Model) -> #(Model, effect.Effect(Msg)) {
       Model(..model, autopilot_enabled: True),
       trigger_autopilot_effect(),
     )
+    EnterCryosleepAction -> #(
+      Model(..model, cryosleep_enabled: True),
+      effect.none(),
+    )
+    LeaveCryosleepAction -> {
+      #(Model(..model, cryosleep_enabled: False), effect.none())
+    }
   }
 }
 
@@ -402,6 +435,7 @@ fn simulate(model: Model, hours: Int) -> Model {
   let #(day, hour) = pass_time(model, hours)
   // Movement
   let distance_to_move = model.speed *. int.to_float(hours)
+  // TODO fix overshoot!
   let position =
     util.move_towards(model.position, lucy.position, distance_to_move)
   let distance_traveled = model.distance_traveled +. distance_to_move
@@ -486,12 +520,23 @@ fn trigger_waystation_encounter(model: Model) -> Model {
       ],
     )
 
-  Model(
-    ..model,
-    prompt: Some(prompt),
-    last_waystation_at: model.distance_traveled,
-  )
-  |> disable_autopilot()
+  case model.cryosleep_enabled {
+    True -> {
+      Model(..model, last_waystation_at: model.distance_traveled, message_log: [
+        "Recenly passed the "
+        <> station_name
+        <> " waystation while in cryosleep",
+      ])
+    }
+    False -> {
+      Model(
+        ..model,
+        prompt: Some(prompt),
+        last_waystation_at: model.distance_traveled,
+      )
+      |> disable_autopilot()
+    }
+  }
 }
 
 fn trigger_scrap_encounter(model: Model) -> Model {
@@ -536,21 +581,22 @@ fn trigger_scrap_encounter(model: Model) -> Model {
       ],
     )
 
-  case model.scrap_drone {
-    True -> {
+  case model.scrap_drone, model.cryosleep_enabled {
+    True, _ -> {
       Model(
         ..model,
         last_scrap_discovery_at: model.distance_traveled,
         scrap: model.scrap + yield,
         message_log: [
-          "Scrap harvester drone collected "
+          "Scrap harvester drone recently collected "
           <> int.to_string(yield)
           <> " scrap from the wreck of "
-          <> ship_name,
+          <> ship_name
+          <> ".",
         ],
       )
     }
-    False -> {
+    False, False -> {
       Model(
         ..model,
         last_scrap_discovery_at: model.distance_traveled,
@@ -558,33 +604,72 @@ fn trigger_scrap_encounter(model: Model) -> Model {
       )
       |> disable_autopilot()
     }
+    False, True -> {
+      Model(
+        ..model,
+        last_scrap_discovery_at: model.distance_traveled,
+        message_log: [
+          "Recently passed the wreck of " <> ship_name <> " while in cryosleep.",
+        ],
+      )
+    }
   }
+}
+
+fn speed_upgrade_cost(model: Model) {
+  let exponent = int.to_float(model.speed_upgrades)
+  let multiplier = float.power(2.0, exponent) |> result.unwrap(1.0)
+  float.round(multiplier *. int.to_float(upgrade_base_cost))
 }
 
 /// These actions are always available to the player, when there is no active prompt
 fn available_actions(model: Model) -> List(Action) {
-  [
-    case model.autopilot_enabled {
-      True -> Some(DisableAutoPilotAction)
-      False -> Some(PilotShipAction)
-    },
-    case model.autopilot_available && !model.autopilot_enabled {
-      True -> Some(EnableAutoPilotAction)
-      False -> None
-    },
-  ]
-  |> option.values()
+  []
+  |> add_action_if(LeaveCryosleepAction, model.cryosleep_enabled)
+  |> add_action_if(
+    EnterCryosleepAction,
+    model.autopilot_enabled
+      && model.cryosleep_available
+      && !model.cryosleep_enabled,
+  )
+  |> add_action_if(
+    EnableAutoPilotAction,
+    model.autopilot_available && !model.autopilot_enabled,
+  )
+  |> add_action_if(
+    DisableAutoPilotAction,
+    model.autopilot_enabled && !model.cryosleep_enabled,
+  )
+  |> add_action_if(PilotShipAction, !model.autopilot_enabled)
+  |> list.reverse()
+}
+
+fn add_action_if(actions: List(Action), action: Action, predicate: Bool) {
+  case predicate {
+    True -> [action, ..actions]
+    False -> actions
+  }
 }
 
 fn view_status(model: Model) {
-  case model {
-    Model(autopilot_enabled: True, ..) -> {
-      html.text("The autopilot system is engaged.")
-    }
-    _ -> {
-      html.text("You have the controls, all systems are running normally.")
-    }
-  }
+  html.div([], [
+    case model {
+      Model(autopilot_enabled: True, ..) -> {
+        html.text("The autopilot system is engaged.")
+      }
+      _ -> {
+        html.text("You have the controls, all systems are running normally. ")
+      }
+    },
+    case model.cryosleep_enabled {
+      True -> {
+        html.text(" You are in cryosleep.")
+      }
+      False -> {
+        element.none()
+      }
+    },
+  ])
 }
 
 fn trigger_autopilot_effect() -> effect.Effect(Msg) {
@@ -736,6 +821,14 @@ fn view_station(model: Model, station: Waystation) {
         model.credits,
         "Allows you to pass time significantly faster when using the autopilot system",
       ),
+      view_buy_button(
+        "Engine Upgrade",
+        UserClickedBuySpeedUpgradeAction,
+        model.speed_upgrades >= max_upgrades,
+        speed_upgrade_cost(model),
+        model.credits,
+        "Allows you to pass time significantly faster when using the autopilot system",
+      ),
       view_button(UserClickedLeaveStationAction, "Leave Station"),
     ]),
   ])
@@ -771,6 +864,18 @@ fn view_action(a: Action) {
         a,
         "Enable Autopilot",
         "Engage the autopilot system (The ship will start moving by itself)",
+      )
+    EnterCryosleepAction ->
+      view_action_button(
+        a,
+        "Enter Cryosleep",
+        "Hibernate in your cryochamber - the days will start to feel like hours",
+      )
+    LeaveCryosleepAction ->
+      view_action_button(
+        a,
+        "Leave Cryosleep",
+        "Return to normal ship operation",
       )
   }
 }
