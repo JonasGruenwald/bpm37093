@@ -287,8 +287,7 @@ fn trigger_end(model: Model) -> Model {
     "As the crafts engines turn off one by one, you begin to notice a sound that doesn't seem to come from any of the ships systems.",
     "A low humming tone, seemingly varying with the pulsing of the white dwarfs light.",
     "She is singing.",
-    "As you sit down on the floor of the vessel, looking up at Lucy, you somehow feel like the sands of the bottom of an hourglass",
-    "\n",
+    "As you sit down on the floor of the vessel, looking up at Lucy, you somehow feel like the sands on the bottom of an hourglass",
   ]
 
   // TODO time to turn it over then
